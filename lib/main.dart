@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:mini_e_commerce/app_router.dart';
 import 'package:mini_e_commerce/constants/app_theme.dart';
+import 'package:mini_e_commerce/providers/cart_provider.dart';
+import 'package:mini_e_commerce/providers/order_provider.dart';
+import 'package:mini_e_commerce/providers/product_provider.dart';
+import 'package:provider/provider.dart';
 
 void main() {
   runApp(const MiniECommerceApp());
@@ -11,12 +15,21 @@ class MiniECommerceApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Mini E-Commerce',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      initialRoute: AppRouter.home,
-      onGenerateRoute: AppRouter.onGenerateRoute,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<ProductProvider>(
+          create: (_) => ProductProvider(),
+        ),
+        ChangeNotifierProvider<CartProvider>(create: (_) => CartProvider()),
+        ChangeNotifierProvider<OrderProvider>(create: (_) => OrderProvider()),
+      ],
+      child: MaterialApp(
+        title: 'Mini E-Commerce',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.light,
+        initialRoute: AppRouter.home,
+        onGenerateRoute: AppRouter.onGenerateRoute,
+      ),
     );
   }
 }

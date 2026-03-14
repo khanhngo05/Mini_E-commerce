@@ -6,7 +6,7 @@ void main() {
   testWidgets('Hien thi man hinh khoi tao TH4', (WidgetTester tester) async {
     await tester.pumpWidget(const MiniECommerceApp());
 
-    expect(find.text('TH4 - Nhom [So nhom]'), findsOneWidget);
+    expect(find.text('TH4 - Nhóm 10'), findsOneWidget);
     expect(find.text('Mini E-Commerce - Commit 1 setup'), findsOneWidget);
   });
 }
