@@ -574,7 +574,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildPromoCards() {
     return SizedBox(
-      height: 124,
+      height: 132,
       child: ListView(
         padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
         scrollDirection: Axis.horizontal,
@@ -1010,7 +1010,7 @@ class _PromoCard extends StatelessWidget {
             title,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 24,
+              fontSize: 20,
               fontWeight: FontWeight.w900,
               height: 1,
             ),
