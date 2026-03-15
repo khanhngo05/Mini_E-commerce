@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart';
-// import '../widgets/cart_item_widget.dart'; // Chúng ta sẽ tạo file này ở bước sau
+import '../widgets/cart_item_widget.dart';
 
 class CartScreen extends StatelessWidget {
   const CartScreen({Key? key}) : super(key: key);
@@ -32,16 +32,7 @@ class CartScreen extends StatelessWidget {
                         itemBuilder: (context, index) {
                           final item = cartItems[index];
                           // Tạm thời hiển thị Text, lát nữa chúng ta sẽ thay bằng CartItemWidget
-                          return ListTile(
-                            title: Text(item.title),
-                            subtitle: Text('Số lượng: ${item.quantity}'),
-                            trailing: Checkbox(
-                              value: item.isSelected,
-                              onChanged: (_) {
-                                cartProvider.toggleItemSelection(item.productId);
-                              },
-                            ),
-                          );
+                        return CartItemWidget(item: item);
                         },
                       ),
               ),
