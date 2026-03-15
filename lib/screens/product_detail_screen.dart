@@ -35,6 +35,260 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     super.dispose();
   }
 
+  Future<void> _openVariantSelectorSheet({
+    required bool showSizeSelector,
+    required double selectedPrice,
+  }) async {
+    String tempSize = _selectedSize;
+    String tempColor = _selectedColor;
+    int tempQuantity = 1;
+
+    final selection = await showModalBottomSheet<_CartSelectionDraft>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                16,
+                14,
+                16,
+                16 + MediaQuery.viewInsetsOf(sheetContext).bottom,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: SizedBox(
+                            width: 80,
+                            height: 80,
+                            child: Image.network(
+                              widget.product.imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const ColoredBox(
+                                  color: Color(0xFFF0F0F0),
+                                  child: Icon(Icons.image_not_supported),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                widget.product.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '\$${selectedPrice.toStringAsFixed(2)}',
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  color: const Color(0xFFD32F2F),
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    if (showSizeSelector) ...<Widget>[
+                      Text(
+                        'Size',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: _sizes.map((size) {
+                          final isSelected = tempSize == size;
+                          return ChoiceChip(
+                            label: Text(size),
+                            selected: isSelected,
+                            onSelected: (_) {
+                              setModalState(() {
+                                tempSize = size;
+                              });
+                            },
+                            selectedColor: const Color(0xFFD32F2F),
+                            labelStyle: TextStyle(
+                              color: isSelected
+                                  ? Colors.white
+                                  : const Color(0xFF3A3A3A),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    Text(
+                      'Color',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: _colors.map((colorName) {
+                        final isSelected = tempColor == colorName;
+                        return ChoiceChip(
+                          label: Text(colorName),
+                          selected: isSelected,
+                          onSelected: (_) {
+                            setModalState(() {
+                              tempColor = colorName;
+                            });
+                          },
+                          selectedColor: const Color(0xFF1F1F1F),
+                          labelStyle: TextStyle(
+                            color: isSelected
+                                ? Colors.white
+                                : const Color(0xFF3A3A3A),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: <Widget>[
+                        Text(
+                          'Quantity',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const Spacer(),
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: const Color(0xFFD8D8D8)),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            children: <Widget>[
+                              IconButton(
+                                onPressed: tempQuantity > 1
+                                    ? () {
+                                        setModalState(() {
+                                          tempQuantity -= 1;
+                                        });
+                                      }
+                                    : null,
+                                icon: const Icon(Icons.remove_rounded),
+                              ),
+                              SizedBox(
+                                width: 30,
+                                child: Text(
+                                  '$tempQuantity',
+                                  textAlign: TextAlign.center,
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  setModalState(() {
+                                    tempQuantity += 1;
+                                  });
+                                },
+                                icon: const Icon(Icons.add_rounded),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () {
+                          Navigator.of(sheetContext).pop(
+                            _CartSelectionDraft(
+                              size: showSizeSelector ? tempSize : null,
+                              color: tempColor,
+                              quantity: tempQuantity,
+                            ),
+                          );
+                        },
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFFD32F2F),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Add to Cart',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (!mounted || selection == null) {
+      return;
+    }
+
+    setState(() {
+      if (selection.size != null) {
+        _selectedSize = selection.size!;
+      }
+      _selectedColor = selection.color;
+    });
+
+    // Keep selected variants and quantity ready for CartProvider integration.
+    final cartPayload = <String, dynamic>{
+      'productId': widget.product.id,
+      'size': selection.size,
+      'color': selection.color,
+      'quantity': selection.quantity,
+    };
+    if (cartPayload.isNotEmpty) {
+      // Intentionally empty; payload is prepared for a later CartProvider commit.
+    }
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(const SnackBar(content: Text('Product added to cart')));
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -375,7 +629,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               children: <Widget>[
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      _openVariantSelectorSheet(
+                        showSizeSelector: showSizeSelector,
+                        selectedPrice: salePrice,
+                      );
+                    },
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Color(0xFFD32F2F)),
                       foregroundColor: const Color(0xFFD32F2F),
@@ -415,4 +674,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       ),
     );
   }
+}
+
+class _CartSelectionDraft {
+  const _CartSelectionDraft({
+    required this.size,
+    required this.color,
+    required this.quantity,
+  });
+
+  final String? size;
+  final String color;
+  final int quantity;
 }
