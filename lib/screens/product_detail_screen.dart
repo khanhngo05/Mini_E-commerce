@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:mini_e_commerce/models/product.dart';
+import 'package:mini_e_commerce/widgets/price_text.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   const ProductDetailScreen({required this.product, super.key});
@@ -11,22 +12,22 @@ class ProductDetailScreen extends StatefulWidget {
 }
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
-  static const List<String> _sizes = <String>['S', 'M', 'L', 'XL'];
-  static const List<String> _colors = <String>['Red', 'Blue', 'Black'];
+  static const List<String> _sizes = <String>['S', 'M', 'L'];
+  static const List<String> _colors = <String>['Xanh', 'Đỏ'];
 
   late final PageController _pageController;
   late final List<String> _detailImages;
 
   int _currentImageIndex = 0;
-  String _selectedSize = _sizes[1];
+  String _selectedSize = _sizes[0];
   String _selectedColor = _colors[0];
-  bool _isDescriptionExpanded = false;
+  int _cartBadgeCount = 0;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
-    _detailImages = List<String>.filled(4, widget.product.imageUrl);
+    _detailImages = List<String>.filled(5, widget.product.imageUrl);
   }
 
   @override
@@ -36,7 +37,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Future<void> _openVariantSelectorSheet({
-    required bool showSizeSelector,
     required double selectedPrice,
   }) async {
     String tempSize = _selectedSize;
@@ -52,6 +52,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       ),
       builder: (sheetContext) {
         final theme = Theme.of(sheetContext);
+
         return StatefulBuilder(
           builder: (context, setModalState) {
             return Padding(
@@ -101,7 +102,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                '\$${selectedPrice.toStringAsFixed(2)}',
+                                'Giá đã chọn',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: const Color(0xFF6B6B6B),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              PriceText(
+                                selectedPrice,
                                 style: theme.textTheme.headlineSmall?.copyWith(
                                   color: const Color(0xFFD32F2F),
                                   fontWeight: FontWeight.w800,
@@ -113,41 +121,39 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ],
                     ),
                     const SizedBox(height: 18),
-                    if (showSizeSelector) ...<Widget>[
-                      Text(
-                        'Size',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: _sizes.map((size) {
-                          final isSelected = tempSize == size;
-                          return ChoiceChip(
-                            label: Text(size),
-                            selected: isSelected,
-                            onSelected: (_) {
-                              setModalState(() {
-                                tempSize = size;
-                              });
-                            },
-                            selectedColor: const Color(0xFFD32F2F),
-                            labelStyle: TextStyle(
-                              color: isSelected
-                                  ? Colors.white
-                                  : const Color(0xFF3A3A3A),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
                     Text(
-                      'Color',
+                      'Kích cỡ',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: _sizes.map((size) {
+                        final isSelected = tempSize == size;
+                        return ChoiceChip(
+                          label: Text(size),
+                          selected: isSelected,
+                          onSelected: (_) {
+                            setModalState(() {
+                              tempSize = size;
+                            });
+                          },
+                          selectedColor: const Color(0xFFD32F2F),
+                          labelStyle: TextStyle(
+                            color: isSelected
+                                ? Colors.white
+                                : const Color(0xFF3A3A3A),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Màu sắc',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -180,7 +186,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     Row(
                       children: <Widget>[
                         Text(
-                          'Quantity',
+                          'Số lượng',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
@@ -233,7 +239,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         onPressed: () {
                           Navigator.of(sheetContext).pop(
                             _CartSelectionDraft(
-                              size: showSizeSelector ? tempSize : null,
+                              size: tempSize,
                               color: tempColor,
                               quantity: tempQuantity,
                             ),
@@ -248,7 +254,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           ),
                         ),
                         child: const Text(
-                          'Add to Cart',
+                          'Xác nhận',
                           style: TextStyle(fontWeight: FontWeight.w700),
                         ),
                       ),
@@ -267,13 +273,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
 
     setState(() {
-      if (selection.size != null) {
-        _selectedSize = selection.size!;
-      }
+      _selectedSize = selection.size;
       _selectedColor = selection.color;
+      _cartBadgeCount += selection.quantity;
     });
 
-    // Keep selected variants and quantity ready for CartProvider integration.
     final cartPayload = <String, dynamic>{
       'productId': widget.product.id,
       'size': selection.size,
@@ -281,12 +285,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       'quantity': selection.quantity,
     };
     if (cartPayload.isNotEmpty) {
-      // Intentionally empty; payload is prepared for a later CartProvider commit.
+      // Reserved for upcoming CartProvider integration.
     }
 
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(const SnackBar(content: Text('Product added to cart')));
+      ..showSnackBar(const SnackBar(content: Text('Thêm thành công')));
   }
 
   @override
@@ -295,16 +299,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final product = widget.product;
     final salePrice = product.price;
     final originalPrice = salePrice * 1.5;
-    final normalizedCategory = product.category.toLowerCase();
-    final isJewelryCategory = normalizedCategory.contains('jewel');
-    final isFashionCategory =
-        normalizedCategory.contains('clothing') ||
-        normalizedCategory.contains('fashion') ||
-        normalizedCategory.contains('thoi trang');
-    final showSizeSelector = isFashionCategory && !isJewelryCategory;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Product Detail')),
+      appBar: AppBar(title: const Text('Chi tiết sản phẩm')),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -313,7 +310,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 : constraints.maxWidth;
 
             return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 110),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 130),
               child: Center(
                 child: ConstrainedBox(
                   constraints: BoxConstraints(maxWidth: contentWidth),
@@ -430,7 +427,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    '(${product.ratingCount} reviews)',
+                                    '(${product.ratingCount} đánh giá)',
                                     style: theme.textTheme.bodyMedium?.copyWith(
                                       color: const Color(0xFF6B6B6B),
                                     ),
@@ -449,16 +446,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: <Widget>[
-                              Text(
-                                '\$${salePrice.toStringAsFixed(2)}',
+                              PriceText(
+                                salePrice,
                                 style: theme.textTheme.headlineSmall?.copyWith(
                                   color: const Color(0xFFD32F2F),
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              Text(
-                                '\$${originalPrice.toStringAsFixed(2)}',
+                              PriceText(
+                                originalPrice,
                                 style: theme.textTheme.titleMedium?.copyWith(
                                   color: const Color(0xFF6B6B6B),
                                   decoration: TextDecoration.lineThrough,
@@ -473,74 +470,48 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         margin: EdgeInsets.zero,
                         child: Padding(
                           padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              if (showSizeSelector) ...<Widget>[
-                                Text(
-                                  'Size',
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                Wrap(
-                                  spacing: 10,
-                                  runSpacing: 10,
-                                  children: _sizes.map((size) {
-                                    final isSelected = _selectedSize == size;
-                                    return ChoiceChip(
-                                      label: Text(size),
-                                      selected: isSelected,
-                                      onSelected: (_) {
-                                        setState(() {
-                                          _selectedSize = size;
-                                        });
-                                      },
-                                      selectedColor: const Color(0xFFD32F2F),
-                                      labelStyle: TextStyle(
-                                        color: isSelected
-                                            ? Colors.white
-                                            : const Color(0xFF3A3A3A),
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    );
-                                  }).toList(),
-                                ),
-                                const SizedBox(height: 16),
-                              ],
-                              Text(
-                                'Color',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Wrap(
-                                spacing: 10,
-                                runSpacing: 10,
-                                children: _colors.map((colorName) {
-                                  final isSelected =
-                                      _selectedColor == colorName;
-                                  return ChoiceChip(
-                                    label: Text(colorName),
-                                    selected: isSelected,
-                                    onSelected: (_) {
-                                      setState(() {
-                                        _selectedColor = colorName;
-                                      });
-                                    },
-                                    selectedColor: const Color(0xFF1F1F1F),
-                                    labelStyle: TextStyle(
-                                      color: isSelected
-                                          ? Colors.white
-                                          : const Color(0xFF3A3A3A),
-                                      fontWeight: FontWeight.w600,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () {
+                              _openVariantSelectorSheet(
+                                selectedPrice: salePrice,
+                              );
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              child: Row(
+                                children: <Widget>[
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: <Widget>[
+                                        Text(
+                                          'Chọn kích cỡ, màu sắc',
+                                          style: theme.textTheme.titleMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          '$_selectedSize, $_selectedColor',
+                                          style: theme.textTheme.bodyMedium
+                                              ?.copyWith(
+                                                color: const Color(0xFF6B6B6B),
+                                              ),
+                                        ),
+                                      ],
                                     ),
-                                  );
-                                }).toList(),
+                                  ),
+                                  const Icon(
+                                    Icons.chevron_right_rounded,
+                                    size: 28,
+                                    color: Color(0xFF8A8A8A),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
@@ -553,50 +524,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: <Widget>[
                               Text(
-                                'Description',
+                                'Mô tả chi tiết',
                                 style: theme.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              Text(
-                                product.description,
-                                style: theme.textTheme.bodyLarge,
-                                maxLines: _isDescriptionExpanded ? null : 3,
-                                overflow: _isDescriptionExpanded
-                                    ? TextOverflow.visible
-                                    : TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 10),
-                              AnimatedSize(
-                                duration: const Duration(milliseconds: 220),
-                                curve: Curves.easeInOut,
-                                child: Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: TextButton(
-                                    onPressed: () {
-                                      setState(() {
-                                        _isDescriptionExpanded =
-                                            !_isDescriptionExpanded;
-                                      });
-                                    },
-                                    style: TextButton.styleFrom(
-                                      padding: EdgeInsets.zero,
-                                      minimumSize: const Size(0, 28),
-                                      tapTargetSize:
-                                          MaterialTapTargetSize.shrinkWrap,
-                                    ),
-                                    child: Text(
-                                      _isDescriptionExpanded
-                                          ? 'Show less'
-                                          : 'See more',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        color: Color(0xFFD32F2F),
-                                      ),
-                                    ),
-                                  ),
-                                ),
+                              _ExpandableDescription(
+                                text: product.description,
+                                maxLines: 5,
                               ),
                             ],
                           ),
@@ -624,47 +560,130 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         child: SafeArea(
           top: false,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
             child: Row(
               children: <Widget>[
                 Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      _openVariantSelectorSheet(
-                        showSizeSelector: showSizeSelector,
-                        selectedPrice: salePrice,
-                      );
-                    },
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFFD32F2F)),
-                      foregroundColor: const Color(0xFFD32F2F),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {},
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(46),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Icon(Icons.chat_bubble_outline_rounded),
+                        ),
                       ),
-                    ),
-                    child: const Text(
-                      'Add to Cart',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: <Widget>[
+                            OutlinedButton(
+                              onPressed: () {},
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size.fromHeight(46),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Icon(Icons.shopping_cart_outlined),
+                            ),
+                            if (_cartBadgeCount > 0)
+                              Positioned(
+                                top: -4,
+                                right: -4,
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 220),
+                                  transitionBuilder: (child, animation) {
+                                    return ScaleTransition(
+                                      scale: animation,
+                                      child: child,
+                                    );
+                                  },
+                                  child: Container(
+                                    key: ValueKey<int>(_cartBadgeCount),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFD32F2F),
+                                      borderRadius: BorderRadius.circular(99),
+                                    ),
+                                    child: Text(
+                                      '$_cartBadgeCount',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: FilledButton(
-                    onPressed: () {},
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFFD32F2F),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            _openVariantSelectorSheet(selectedPrice: salePrice);
+                          },
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFFD32F2F)),
+                            foregroundColor: const Color(0xFFD32F2F),
+                            minimumSize: const Size.fromHeight(46),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'Thêm vào giỏ',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    child: const Text(
-                      'Buy Now',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: () {},
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFFD32F2F),
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size.fromHeight(46),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'Mua liền',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -676,6 +695,77 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 }
 
+class _ExpandableDescription extends StatefulWidget {
+  const _ExpandableDescription({required this.text, required this.maxLines});
+
+  final String text;
+  final int maxLines;
+
+  @override
+  State<_ExpandableDescription> createState() => _ExpandableDescriptionState();
+}
+
+class _ExpandableDescriptionState extends State<_ExpandableDescription> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final textStyle = Theme.of(context).textTheme.bodyLarge;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final painter = TextPainter(
+          text: TextSpan(text: widget.text, style: textStyle),
+          maxLines: widget.maxLines,
+          textDirection: TextDirection.ltr,
+        )..layout(maxWidth: constraints.maxWidth);
+
+        final hasOverflow = painter.didExceedMaxLines;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            AnimatedSize(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeInOut,
+              child: Text(
+                widget.text,
+                style: textStyle,
+                maxLines: _expanded ? null : widget.maxLines,
+                overflow: _expanded
+                    ? TextOverflow.visible
+                    : TextOverflow.ellipsis,
+              ),
+            ),
+            if (hasOverflow) ...<Widget>[
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _expanded = !_expanded;
+                  });
+                },
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(0, 26),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  _expanded ? 'Thu gọn' : 'Xem thêm',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFFD32F2F),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
 class _CartSelectionDraft {
   const _CartSelectionDraft({
     required this.size,
@@ -683,7 +773,7 @@ class _CartSelectionDraft {
     required this.quantity,
   });
 
-  final String? size;
+  final String size;
   final String color;
   final int quantity;
 }

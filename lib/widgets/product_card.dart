@@ -33,44 +33,48 @@ class ProductCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: <Widget>[
-                  Image.network(
-                    product.imageUrl,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, progress) {
-                      if (progress == null) {
-                        return child;
-                      }
+                  Hero(
+                    tag: product.id,
+                    child: Image.network(
+                      product.imageUrl,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) {
+                          return child;
+                        }
 
-                      final expectedTotalBytes = progress.expectedTotalBytes;
-                      final progressValue = expectedTotalBytes == null
-                          ? null
-                          : progress.cumulativeBytesLoaded / expectedTotalBytes;
+                        final expectedTotalBytes = progress.expectedTotalBytes;
+                        final progressValue = expectedTotalBytes == null
+                            ? null
+                            : progress.cumulativeBytesLoaded /
+                                  expectedTotalBytes;
 
-                      return Stack(
-                        fit: StackFit.expand,
-                        children: <Widget>[
-                          Opacity(opacity: 0.35, child: child),
-                          Container(
-                            color: Colors.white.withValues(alpha: 0.25),
-                          ),
-                          Center(
-                            child: CircularProgressIndicator(
-                              value: progressValue,
-                              strokeWidth: 2,
-                              color: const Color(0xFFD32F2F),
+                        return Stack(
+                          fit: StackFit.expand,
+                          children: <Widget>[
+                            Opacity(opacity: 0.35, child: child),
+                            Container(
+                              color: Colors.white.withValues(alpha: 0.25),
                             ),
+                            Center(
+                              child: CircularProgressIndicator(
+                                value: progressValue,
+                                strokeWidth: 2,
+                                color: const Color(0xFFD32F2F),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return const ColoredBox(
+                          color: Color(0xFFECECEC),
+                          child: Center(
+                            child: Icon(Icons.image_not_supported_outlined),
                           ),
-                        ],
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return const ColoredBox(
-                        color: Color(0xFFECECEC),
-                        child: Center(
-                          child: Icon(Icons.image_not_supported_outlined),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
                   Positioned(
                     left: 8,
