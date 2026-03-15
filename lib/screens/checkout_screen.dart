@@ -74,9 +74,26 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       return;
     }
 
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      AppRouter.orderHistory,
-      (route) => route.settings.name == AppRouter.home,
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Order Placed'),
+          content: const Text('Your order has been placed successfully!'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                Navigator.of(
+                  context,
+                ).pushNamedAndRemoveUntil(AppRouter.home, (route) => false);
+              },
+              child: const Text('Back to Home'),
+            ),
+          ],
+        );
+      },
     );
   }
 
