@@ -49,11 +49,18 @@ class CartProvider with ChangeNotifier {
     _saveAndNotify();
   }
 
+  void setItemSelection(String id, bool isSelected) {
+    final index = _items.indexWhere((item) => item.id == id);
+    if (index != -1) {
+      _items[index] = _items[index].copyWith(isSelected: isSelected);
+      _saveAndNotify();
+    }
+  }
+
   void toggleItemSelection(String id) {
     final index = _items.indexWhere((item) => item.id == id);
     if (index != -1) {
-      _items[index] = _items[index].copyWith(isSelected: !_items[index].isSelected);
-      _saveAndNotify();
+      setItemSelection(id, !_items[index].isSelected);
     }
   }
 

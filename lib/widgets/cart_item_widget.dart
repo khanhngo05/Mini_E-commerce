@@ -66,8 +66,8 @@ class CartItemWidget extends StatelessWidget {
               Checkbox(
                 activeColor: Colors.orange,
                 value: item.isSelected,
-                onChanged: (_) {
-                  cartProvider.toggleItemSelection(item.id);
+                onChanged: (value) {
+                  cartProvider.setItemSelection(item.id, value ?? false);
                 },
               ),
               // 2. Hiển thị ảnh sản phẩm từ đối tượng product

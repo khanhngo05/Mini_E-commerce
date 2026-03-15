@@ -39,6 +39,10 @@ void main() {
       cartProvider.toggleItemSelection(id);
       // 150.000 * 2 = 300.000
       expect(cartProvider.totalAmount, 300000.0);
+
+      cartProvider.setItemSelection(id, false);
+      // Bỏ tick thì tổng phải tự động trừ về 0
+      expect(cartProvider.totalAmount, 0.0);
     });
 
     test('Logic: Chọn tất cả 2 chiều', () {
