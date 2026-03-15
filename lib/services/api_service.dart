@@ -38,6 +38,30 @@ class ApiService {
     }
   }
 
+  Future<List<String>> fetchProductCategoryIds() async {
+    final uri = Uri.parse('$_baseUrl/products/categories');
+    try {
+      final response = await _client.get(uri);
+      if (response.statusCode != 200) {
+        throw ApiException(
+          'Cannot fetch product categories. Code: ${response.statusCode}',
+        );
+      }
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is! List) {
+        throw const ApiException('Category response has invalid format.');
+      }
+
+      return decoded.map((item) => item.toString()).toList();
+    } catch (error) {
+      if (error is ApiException) {
+        rethrow;
+      }
+      throw ApiException('Network error while fetching categories: $error');
+    }
+  }
+
   Future<Product> fetchProductById(int id) async {
     final uri = Uri.parse('$_baseUrl/products/$id');
     try {
