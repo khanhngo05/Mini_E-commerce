@@ -1,5 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:mini_e_commerce/app_router.dart';
+import 'package:mini_e_commerce/models/cart_item.dart';
 import 'package:mini_e_commerce/models/product.dart';
 import 'package:mini_e_commerce/providers/cart_provider.dart';
 import 'package:mini_e_commerce/widgets/price_text.dart';
@@ -294,6 +295,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       );
   }
 
+  void _buyNow({required bool showSizeSelector}) {
+    final cartItem = CartItem(
+      id: 'buy_now_${widget.product.id}_${DateTime.now().microsecondsSinceEpoch}',
+      product: widget.product,
+      quantity: 1,
+      size: showSizeSelector ? _selectedSize : 'M',
+      color: _selectedColor,
+    );
+
+    Navigator.of(context).pushNamed(AppRouter.checkout, arguments: [cartItem]);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -301,6 +314,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final product = widget.product;
     final salePrice = product.price;
     final originalPrice = salePrice * 1.5;
+    final normalizedCategory = product.category.toLowerCase();
+    final showSizeSelector =
+        normalizedCategory.contains('clothing') ||
+        normalizedCategory.contains('fashion') ||
+        normalizedCategory.contains('thoi trang');
 
     return Scaffold(
       appBar: AppBar(title: const Text('Chi tiết sản phẩm')),
@@ -663,11 +681,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ),
                           ),
                         ),
-                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: FilledButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            _buyNow(showSizeSelector: showSizeSelector);
+                          },
                           style: FilledButton.styleFrom(
                             backgroundColor: const Color(0xFFD32F2F),
                             foregroundColor: Colors.white,

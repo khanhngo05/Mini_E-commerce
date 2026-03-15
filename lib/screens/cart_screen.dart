@@ -11,6 +11,7 @@ class CartScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+<<<<<<< HEAD
       backgroundColor: Colors.grey[100], 
       appBar: AppBar(
         title: const Text('Giỏ hàng', style: TextStyle(color: Colors.black)),
@@ -100,6 +101,149 @@ class CartScreen extends StatelessWidget {
                     color: Colors.orange,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
+=======
+      appBar: AppBar(title: const Text('Cart')),
+      body: items.isEmpty
+          ? const Center(child: Text('Your cart is empty'))
+          : Column(
+              children: <Widget>[
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    children: [
+                      Checkbox(
+                        value: cartProvider.allSelected,
+                        onChanged: (value) {
+                          if (value == null) return;
+                          cartProvider.toggleSelectAll(value);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      const Text('Select all'),
+                      const Spacer(),
+                      Text(
+                        '${cartProvider.selectedItems.length}/${cartProvider.totalItemTypes} selected',
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: items.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 8),
+                    itemBuilder: (BuildContext context, int index) {
+                      final item = items[index];
+                      return Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(10),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Checkbox(
+                                value: item.isSelected,
+                                onChanged: (_) {
+                                  cartProvider.toggleSelection(item.id);
+                                },
+                              ),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  item.product.imageUrl,
+                                  width: 70,
+                                  height: 70,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const ColoredBox(
+                                      color: Color(0xFFECECEC),
+                                      child: SizedBox(
+                                        width: 70,
+                                        height: 70,
+                                        child: Icon(
+                                          Icons.image_not_supported_outlined,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Text(
+                                      item.product.title,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    PriceText(item.product.price),
+                                    const SizedBox(height: 8),
+                                    QuantityStepper(
+                                      value: item.quantity,
+                                      onChanged: (next) {
+                                        cartProvider.updateQuantity(
+                                          item.id,
+                                          next,
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () =>
+                                    cartProvider.removeItem(item.id),
+                                icon: const Icon(Icons.delete_outline),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                SafeArea(
+                  top: false,
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      border: Border(top: BorderSide(color: Color(0xFFE5E5E5))),
+                    ),
+                    child: Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              const Text('Selected Total'),
+                              PriceText(cartProvider.selectedAmount),
+                            ],
+                          ),
+                        ),
+                        FilledButton(
+                          onPressed: cartProvider.hasSelectedItems
+                              ? () {
+                                  Navigator.of(context).pushNamed(
+                                    AppRouter.checkout,
+                                    arguments: cartProvider.selectedItems,
+                                  );
+                                }
+                              : null,
+                          child: const Text('Checkout'),
+                        ),
+                      ],
+                    ),
+>>>>>>> feature/checkout-screen
                   ),
                 ),
               ],

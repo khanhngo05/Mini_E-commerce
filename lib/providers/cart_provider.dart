@@ -10,13 +10,31 @@ class CartProvider with ChangeNotifier {
 
   List<CartItem> get items => List.unmodifiable(_items);
 
-  // Getter dùng cho Badge ở HomeScreen
+  List<CartItem> get selectedItems =>
+      _items.where((item) => item.isSelected).toList(growable: false);
+  bool get hasSelectedItems => selectedItems.isNotEmpty;
+  bool get allSelected => isAllSelected;
+
   int get totalItemTypes => _items.length;
+  int get totalQuantity =>
+      _items.fold<int>(0, (sum, item) => sum + item.quantity);
 
   // Logic Người 4: Tổng tiền chỉ tính món được tick
-  double get totalAmount => _items.fold(0.0, (sum, item) => item.isSelected ? sum + item.lineTotal : sum);
+  double get totalAmount => selectedItems.fold<double>(
+    0,
+    (sum, item) => sum + item.lineTotal,
+  );
+
+  double get selectedAmount => totalAmount;
 
   bool get isAllSelected => _items.isNotEmpty && _items.every((item) => item.isSelected);
+
+  void setItems(List<CartItem> nextItems) {
+    _items
+      ..clear()
+      ..addAll(nextItems);
+    _saveAndNotify();
+  }
 
   void addProduct(
     Product product, {
@@ -65,9 +83,17 @@ class CartProvider with ChangeNotifier {
   }
 
   void toggleSelectAll(bool value) {
+    if (_items.isEmpty) {
+      return;
+    }
     for (int i = 0; i < _items.length; i++) {
       _items[i] = _items[i].copyWith(isSelected: value);
     }
+    _saveAndNotify();
+  }
+
+  void removeSelectedItems() {
+    _items.removeWhere((item) => item.isSelected);
     _saveAndNotify();
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mini_e_commerce/app_router.dart';
+import 'package:mini_e_commerce/models/cart_item.dart';
 import 'package:mini_e_commerce/models/order.dart';
 import 'package:mini_e_commerce/providers/cart_provider.dart';
 import 'package:mini_e_commerce/providers/order_provider.dart';
@@ -7,7 +8,9 @@ import 'package:mini_e_commerce/widgets/price_text.dart';
 import 'package:provider/provider.dart';
 
 class CheckoutScreen extends StatefulWidget {
-  const CheckoutScreen({super.key});
+  final List<CartItem>? selectedItems;
+
+  const CheckoutScreen({super.key, this.selectedItems});
 
   @override
   State<CheckoutScreen> createState() => _CheckoutScreenState();
@@ -27,27 +30,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final cartProvider = context.read<CartProvider>();
     final orderProvider = context.read<OrderProvider>();
 
-    // Người 4: Đảm bảo chỉ những món được tick chọn mới được đưa vào đơn hàng
-    // (Hoặc nếu nhóm quy định đặt toàn bộ giỏ thì giữ nguyên cartProvider.items)
-    final selectedItems = cartProvider.items.where((item) => item.isSelected).toList();
+    final selectedItems =
+        widget.selectedItems?.toList(growable: false) ??
+        cartProvider.selectedItems;
 
     if (selectedItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn sản phẩm trong giỏ hàng để thanh toán')),
+        const SnackBar(content: Text('Vui long chon san pham de thanh toan')),
       );
       return;
     }
 
     if (_addressController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập địa chỉ giao hàng')),
+        const SnackBar(content: Text('Vui long nhap dia chi giao hang')),
       );
       return;
     }
 
     final order = Order(
       id: 'order_${DateTime.now().millisecondsSinceEpoch}',
-      items: selectedItems, // Truyền danh sách đã chọn
+      items: List.of(selectedItems),
       shippingAddress: _addressController.text.trim(),
       paymentMethod: _paymentMethod,
       status: OrderStatus.pendingConfirmation,
@@ -55,15 +58,26 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
 
     orderProvider.addOrder(order);
-    
-    // Xóa những món ĐÃ ĐẶT khỏi giỏ hàng
-    for (var item in selectedItems) {
-      cartProvider.removeItem(item.id);
+
+    if (widget.selectedItems != null) {
+      final selectedIds = selectedItems.map((item) => item.id).toSet();
+      cartProvider.setItems(
+        cartProvider.items
+            .where((item) => !selectedIds.contains(item.id))
+            .toList(),
+      );
+    } else {
+      cartProvider.removeSelectedItems();
     }
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
-    // Chuyển hướng về lịch sử đơn hàng
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(const SnackBar(content: Text('Dat hang thanh cong')));
+
     Navigator.of(context).pushNamedAndRemoveUntil(
       AppRouter.orderHistory,
       (route) => route.settings.name == AppRouter.home,
@@ -72,11 +86,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Watch để cập nhật tổng tiền realtime
     final cartProvider = context.watch<CartProvider>();
+    final selectedItems = widget.selectedItems ?? cartProvider.selectedItems;
+    final selectedTotal = selectedItems.fold<double>(
+      0,
+      (sum, item) => sum + item.lineTotal,
+    );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Thanh toán')),
+      appBar: AppBar(title: const Text('Thanh toan')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: <Widget>[
@@ -84,20 +102,26 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             controller: _addressController,
             maxLines: 3,
             decoration: const InputDecoration(
-              labelText: 'Địa chỉ nhận hàng',
-              hintText: 'Nhập số nhà, tên đường, phường/xã...',
+              labelText: 'Dia chi nhan hang',
+              hintText: 'Nhap so nha, ten duong, phuong/xa...',
               border: OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
-            value: _paymentMethod, // Dùng value thay cho initialValue để state nhạy hơn
+            value: _paymentMethod,
             items: const <DropdownMenuItem<String>>[
-              DropdownMenuItem(value: 'COD', child: Text('Thanh toán khi nhận hàng (COD)')),
-              DropdownMenuItem(value: 'Card', child: Text('Thẻ tín dụng / Ghi nợ')),
+              DropdownMenuItem(
+                value: 'COD',
+                child: Text('Thanh toan khi nhan hang (COD)'),
+              ),
+              DropdownMenuItem(
+                value: 'Card',
+                child: Text('The tin dung / Ghi no'),
+              ),
             ],
             decoration: const InputDecoration(
-              labelText: 'Phương thức thanh toán',
+              labelText: 'Phuong thuc thanh toan',
               border: OutlineInputBorder(),
             ),
             onChanged: (value) {
@@ -109,13 +133,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             },
           ),
           const SizedBox(height: 20),
+          Text(
+            'San pham da chon: ${selectedItems.length}',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
           const Text(
-            'Tổng cộng thanh toán',
+            'Tong cong thanh toan',
             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
           ),
           const SizedBox(height: 4),
-          // Sử dụng widget hiển thị tiền của nhóm
-          PriceText(cartProvider.totalAmount),
+          PriceText(selectedTotal),
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: _placeOrder,
@@ -124,7 +152,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
             icon: const Icon(Icons.receipt_long_rounded),
-            label: const Text('ĐẶT HÀNG NGAY', style: TextStyle(fontWeight: FontWeight.bold)),
+            label: const Text(
+              'DAT HANG NGAY',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
