@@ -1,13 +1,12 @@
-// lib/models/cart_item.dart
 class CartItem {
-  final String id; // ID của item trong giỏ
-  final String productId; // ID của sản phẩm gốc
+  final String id;
+  final String productId;
   final String title;
   final String imageUrl;
   final double price;
-  final String variation; // Ví dụ: "Size L, Màu Đỏ"
+  final String variation;
   int quantity;
-  bool isSelected; // Cực kỳ quan trọng cho màn hình của bạn
+  bool isSelected;
 
   CartItem({
     required this.id,
@@ -17,6 +16,10 @@ class CartItem {
     required this.price,
     required this.variation,
     this.quantity = 1,
-    this.isSelected = false, // Mặc định khi thêm vào giỏ là chưa chọn
+    this.isSelected = false,
   });
+
+  // 👇 THÊM DÒNG NÀY VÀO ĐÂY 👇
+  // Getter tính tổng tiền của riêng item này (Đơn giá x Số lượng)
+  double get lineTotal => price * quantity; 
 }
