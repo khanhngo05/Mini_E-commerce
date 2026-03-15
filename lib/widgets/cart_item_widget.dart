@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/cart_item.dart';
 import '../providers/cart_provider.dart';
+import 'price_text.dart';
 
 class CartItemWidget extends StatelessWidget {
   final CartItem item;
@@ -103,12 +104,12 @@ class CartItemWidget extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          '₫${item.product.price.toStringAsFixed(0)}',
+                        PriceText(
+                          item.lineTotal,
                           style: const TextStyle(
-                            color: Colors.orange, 
-                            fontWeight: FontWeight.bold, 
-                            fontSize: 16
+                            color: Colors.orange,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
                         ),
                         // 4. Bộ đếm số lượng tăng/giảm (+/-)

@@ -18,16 +18,32 @@ class CartProvider with ChangeNotifier {
 
   bool get isAllSelected => _items.isNotEmpty && _items.every((item) => item.isSelected);
 
-  void addProduct(Product product, {int quantity = 1}) {
-    final index = _items.indexWhere((item) => item.product.id == product.id);
+  void addProduct(
+    Product product, {
+    int quantity = 1,
+    String size = 'M',
+    String color = 'Default',
+    bool isSelected = false,
+  }) {
+    final index = _items.indexWhere(
+      (item) =>
+          item.product.id == product.id &&
+          item.size == size &&
+          item.color == color,
+    );
     if (index != -1) {
-      _items[index] = _items[index].copyWith(quantity: _items[index].quantity + quantity);
+      _items[index] = _items[index].copyWith(
+        quantity: _items[index].quantity + quantity,
+        isSelected: isSelected ? true : _items[index].isSelected,
+      );
     } else {
       _items.add(CartItem(
         id: 'cart_${DateTime.now().millisecondsSinceEpoch}',
         product: product,
         quantity: quantity,
-        isSelected: false,
+        size: size,
+        color: color,
+        isSelected: isSelected,
       ));
     }
     _saveAndNotify();

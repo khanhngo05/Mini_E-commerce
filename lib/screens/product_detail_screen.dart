@@ -1,6 +1,9 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:mini_e_commerce/app_router.dart';
 import 'package:mini_e_commerce/models/product.dart';
+import 'package:mini_e_commerce/providers/cart_provider.dart';
 import 'package:mini_e_commerce/widgets/price_text.dart';
+import 'package:provider/provider.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   const ProductDetailScreen({required this.product, super.key});
@@ -21,7 +24,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int _currentImageIndex = 0;
   String _selectedSize = _sizes[0];
   String _selectedColor = _colors[0];
-  int _cartBadgeCount = 0;
 
   @override
   void initState() {
@@ -275,27 +277,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     setState(() {
       _selectedSize = selection.size;
       _selectedColor = selection.color;
-      _cartBadgeCount += selection.quantity;
     });
 
-    final cartPayload = <String, dynamic>{
-      'productId': widget.product.id,
-      'size': selection.size,
-      'color': selection.color,
-      'quantity': selection.quantity,
-    };
-    if (cartPayload.isNotEmpty) {
-      // Reserved for upcoming CartProvider integration.
-    }
+    context.read<CartProvider>().addProduct(
+      widget.product,
+      quantity: selection.quantity,
+      size: selection.size,
+      color: selection.color,
+      isSelected: true,
+    );
 
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(const SnackBar(content: Text('Thêm thành công')));
+      ..showSnackBar(
+        SnackBar(content: Text('Đã thêm ${selection.quantity} sản phẩm vào giỏ')),
+      );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cartBadgeCount = context.watch<CartProvider>().totalItemTypes;
     final product = widget.product;
     final salePrice = product.price;
     final originalPrice = salePrice * 1.5;
@@ -584,7 +586,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           clipBehavior: Clip.none,
                           children: <Widget>[
                             OutlinedButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                Navigator.of(context).pushNamed(AppRouter.cart);
+                              },
                               style: OutlinedButton.styleFrom(
                                 minimumSize: const Size.fromHeight(46),
                                 shape: RoundedRectangleBorder(
@@ -593,7 +597,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               ),
                               child: const Icon(Icons.shopping_cart_outlined),
                             ),
-                            if (_cartBadgeCount > 0)
+                            if (cartBadgeCount > 0)
                               Positioned(
                                 top: -4,
                                 right: -4,
@@ -606,7 +610,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                     );
                                   },
                                   child: Container(
-                                    key: ValueKey<int>(_cartBadgeCount),
+                                    key: ValueKey<int>(cartBadgeCount),
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 6,
                                       vertical: 2,
@@ -616,7 +620,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                       borderRadius: BorderRadius.circular(99),
                                     ),
                                     child: Text(
-                                      '$_cartBadgeCount',
+                                      '$cartBadgeCount',
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 11,
