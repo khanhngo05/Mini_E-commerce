@@ -681,6 +681,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ),
                           ),
                         ),
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: FilledButton(
