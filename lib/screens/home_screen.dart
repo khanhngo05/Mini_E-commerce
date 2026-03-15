@@ -25,7 +25,6 @@ class _HomeScreenState extends State<HomeScreen> {
   final PageController _bannerController = PageController(viewportFraction: 0.93);
 
   Timer? _bannerTimer;
-  bool _isScrolled = false;
 
   @override
   void initState() {
@@ -51,13 +50,6 @@ class _HomeScreenState extends State<HomeScreen> {
   // Xử lý hiệu ứng khi cuộn trang
   void _onScroll() {
     if (!_scrollController.hasClients) return;
-
-    final shouldHighlight = _scrollController.offset > 10;
-    if (shouldHighlight != _isScrolled) {
-      setState(() {
-        _isScrolled = shouldHighlight;
-      });
-    }
 
     // Tự động load thêm sản phẩm khi cuộn gần hết (Lazy Loading)
     final provider = context.read<ProductProvider>();
@@ -152,8 +144,12 @@ class _HomeScreenState extends State<HomeScreen> {
               pinned: true,
               expandedHeight: 120,
               toolbarHeight: 52,
-              backgroundColor: _isScrolled ? const Color(0xFFD32F2F) : Colors.transparent,
-              title: const Text('Mini E-Commerce', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+              backgroundColor: const Color(0xFFD32F2F),
+              surfaceTintColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              title: const Text('TH4 - G10', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
               actions: [
                 CartBadge(
                   count: cartProvider.totalItemTypes, // Sử dụng getter mới chúng ta vừa thêm

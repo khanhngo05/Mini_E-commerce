@@ -26,7 +26,7 @@ class MiniECommerceApp extends StatelessWidget {
         ChangeNotifierProvider<UiProvider>(create: (_) => UiProvider()),
       ],
       child: MaterialApp(
-        title: 'Mini E-Commerce',
+        title: 'TH4 - G10',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
         initialRoute: AppRouter.home,
