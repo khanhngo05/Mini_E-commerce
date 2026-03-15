@@ -119,10 +119,22 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       bottomNavigationBar: NavigationBar(
         selectedIndex: uiProvider.selectedBottomTab,
-        onDestinationSelected: (index) {
+        onDestinationSelected: (index) async {
           uiProvider.setBottomTab(index);
-          if (index == 1) Navigator.of(context).pushNamed(AppRouter.cart);
-          if (index == 2) Navigator.of(context).pushNamed(AppRouter.orderHistory);
+          if (index == 1) {
+            await Navigator.of(context).pushNamed(AppRouter.cart);
+            if (!context.mounted) {
+              return;
+            }
+            context.read<UiProvider>().setBottomTab(0);
+          }
+          if (index == 2) {
+            await Navigator.of(context).pushNamed(AppRouter.orderHistory);
+            if (!context.mounted) {
+              return;
+            }
+            context.read<UiProvider>().setBottomTab(0);
+          }
         },
         destinations: const <NavigationDestination>[
           NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Trang chủ'),
