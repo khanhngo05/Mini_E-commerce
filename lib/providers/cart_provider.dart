@@ -16,12 +16,20 @@ class CartProvider extends ChangeNotifier {
   bool _isInitialized = false;
 
   List<CartItem> get items => List.unmodifiable(_items);
+  List<CartItem> get selectedItems =>
+      _items.where((item) => item.isSelected).toList(growable: false);
+  bool get hasSelectedItems => selectedItems.isNotEmpty;
+  bool get allSelected =>
+      _items.isNotEmpty && selectedItems.length == _items.length;
+
   bool get isInitialized => _isInitialized;
   int get totalItemTypes => _items.length;
   int get totalQuantity =>
       _items.fold<int>(0, (sum, item) => sum + item.quantity);
   double get totalAmount =>
       _items.fold<double>(0, (sum, item) => sum + item.lineTotal);
+  double get selectedAmount =>
+      selectedItems.fold<double>(0, (sum, item) => sum + item.lineTotal);
 
   Future<void> loadCart() async {
     final storedItems = await _localStorageService.readCart();
@@ -95,6 +103,21 @@ class CartProvider extends ChangeNotifier {
 
     final target = _items[index];
     _items[index] = target.copyWith(isSelected: !target.isSelected);
+    unawaited(_localStorageService.saveCart(_items));
+    notifyListeners();
+  }
+
+  void toggleSelectAll(bool isSelected) {
+    if (_items.isEmpty) return;
+    for (var i = 0; i < _items.length; i++) {
+      _items[i] = _items[i].copyWith(isSelected: isSelected);
+    }
+    unawaited(_localStorageService.saveCart(_items));
+    notifyListeners();
+  }
+
+  void removeSelectedItems() {
+    _items.removeWhere((item) => item.isSelected);
     unawaited(_localStorageService.saveCart(_items));
     notifyListeners();
   }

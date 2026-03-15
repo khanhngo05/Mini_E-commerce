@@ -19,6 +19,29 @@ class CartScreen extends StatelessWidget {
           ? const Center(child: Text('Your cart is empty'))
           : Column(
               children: <Widget>[
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    children: [
+                      Checkbox(
+                        value: cartProvider.allSelected,
+                        onChanged: (value) {
+                          if (value == null) return;
+                          cartProvider.toggleSelectAll(value);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      const Text('Select all'),
+                      const Spacer(),
+                      Text(
+                        '${cartProvider.selectedItems.length}/${cartProvider.totalItemTypes} selected',
+                      ),
+                    ],
+                  ),
+                ),
                 Expanded(
                   child: ListView.separated(
                     padding: const EdgeInsets.all(12),
@@ -33,6 +56,12 @@ class CartScreen extends StatelessWidget {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: <Widget>[
+                              Checkbox(
+                                value: item.isSelected,
+                                onChanged: (_) {
+                                  cartProvider.toggleSelection(item.id);
+                                },
+                              ),
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
                                 child: Image.network(
@@ -108,15 +137,20 @@ class CartScreen extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: <Widget>[
-                              const Text('Total'),
-                              PriceText(cartProvider.totalAmount),
+                              const Text('Selected Total'),
+                              PriceText(cartProvider.selectedAmount),
                             ],
                           ),
                         ),
                         FilledButton(
-                          onPressed: () {
-                            Navigator.of(context).pushNamed(AppRouter.checkout);
-                          },
+                          onPressed: cartProvider.hasSelectedItems
+                              ? () {
+                                  Navigator.of(context).pushNamed(
+                                    AppRouter.checkout,
+                                    arguments: cartProvider.selectedItems,
+                                  );
+                                }
+                              : null,
                           child: const Text('Checkout'),
                         ),
                       ],

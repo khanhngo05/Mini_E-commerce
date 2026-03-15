@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mini_e_commerce/app_router.dart';
+import 'package:mini_e_commerce/models/cart_item.dart';
 import 'package:mini_e_commerce/models/order.dart';
 import 'package:mini_e_commerce/providers/cart_provider.dart';
 import 'package:mini_e_commerce/providers/order_provider.dart';
@@ -7,7 +8,9 @@ import 'package:mini_e_commerce/widgets/price_text.dart';
 import 'package:provider/provider.dart';
 
 class CheckoutScreen extends StatefulWidget {
-  const CheckoutScreen({super.key});
+  final List<CartItem>? selectedItems;
+
+  const CheckoutScreen({super.key, this.selectedItems});
 
   @override
   State<CheckoutScreen> createState() => _CheckoutScreenState();
@@ -27,10 +30,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final cartProvider = context.read<CartProvider>();
     final orderProvider = context.read<OrderProvider>();
 
-    if (cartProvider.items.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Your cart is empty')));
+    final selectedItems =
+        widget.selectedItems?.toList(growable: false) ??
+        cartProvider.selectedItems;
+
+    if (selectedItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No selected items for checkout')),
+      );
       return;
     }
 
@@ -43,7 +50,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     final order = Order(
       id: 'order_${DateTime.now().millisecondsSinceEpoch}',
-      items: List.of(cartProvider.items),
+      items: List.of(selectedItems),
       shippingAddress: _addressController.text.trim(),
       paymentMethod: _paymentMethod,
       status: OrderStatus.pendingConfirmation,
@@ -51,7 +58,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
 
     orderProvider.addOrder(order);
-    cartProvider.clear();
+
+    if (widget.selectedItems != null) {
+      final selectedIds = selectedItems.map((item) => item.id).toSet();
+      cartProvider.setItems(
+        cartProvider.items
+            .where((item) => !selectedIds.contains(item.id))
+            .toList(),
+      );
+    } else {
+      cartProvider.removeSelectedItems();
+    }
 
     if (!mounted) {
       return;
@@ -66,6 +83,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     final cartProvider = context.watch<CartProvider>();
+    final selectedItems = widget.selectedItems ?? cartProvider.selectedItems;
+    final selectedTotal = selectedItems.fold<double>(
+      0,
+      (sum, item) => sum + item.lineTotal,
+    );
 
     return Scaffold(
       appBar: AppBar(title: const Text('Checkout')),
@@ -101,12 +123,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             },
           ),
           const SizedBox(height: 20),
+          Text(
+            'Selected Items: ${selectedItems.length}',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
           const Text(
             'Total amount',
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 4),
-          PriceText(cartProvider.totalAmount),
+          PriceText(selectedTotal),
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: _placeOrder,

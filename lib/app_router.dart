@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mini_e_commerce/models/product.dart';
+import 'package:mini_e_commerce/models/cart_item.dart';
 import 'package:mini_e_commerce/screens/cart_screen.dart';
 import 'package:mini_e_commerce/screens/checkout_screen.dart';
 import 'package:mini_e_commerce/screens/home_screen.dart';
@@ -40,8 +41,13 @@ class AppRouter {
           settings: settings,
         );
       case checkout:
+        final selectedItems = settings.arguments;
         return MaterialPageRoute<void>(
-          builder: (_) => const CheckoutScreen(),
+          builder: (_) => CheckoutScreen(
+            selectedItems: selectedItems is List
+                ? selectedItems.cast<CartItem>()
+                : null,
+          ),
           settings: settings,
         );
       case orderHistory:

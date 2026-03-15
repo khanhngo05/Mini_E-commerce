@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:mini_e_commerce/app_router.dart';
+import 'package:mini_e_commerce/models/cart_item.dart';
 import 'package:mini_e_commerce/models/product.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -287,6 +289,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(const SnackBar(content: Text('Product added to cart')));
+  }
+
+  void _buyNow({required bool showSizeSelector, required double salePrice}) {
+    final cartItem = CartItem(
+      id: 'buy_now_${widget.product.id}_${DateTime.now().microsecondsSinceEpoch}',
+      product: widget.product,
+      quantity: 1,
+      size: showSizeSelector ? _selectedSize : 'M',
+      color: _selectedColor,
+    );
+
+    Navigator.of(context).pushNamed(AppRouter.checkout, arguments: [cartItem]);
   }
 
   @override
@@ -652,7 +666,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: FilledButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      _buyNow(
+                        showSizeSelector: showSizeSelector,
+                        salePrice: salePrice,
+                      );
+                    },
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFFD32F2F),
                       foregroundColor: Colors.white,
