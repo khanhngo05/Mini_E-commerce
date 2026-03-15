@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart';
 import '../widgets/cart_item_widget.dart';
-// Lấy thêm file router từ code của nhóm để làm chức năng chuyển trang
+// Đảm bảo import đúng file AppRouter của nhóm để chuyển trang Checkout
 import 'package:mini_e_commerce/app_router.dart';
 
 class CartScreen extends StatelessWidget {
@@ -18,9 +18,10 @@ class CartScreen extends StatelessWidget {
         elevation: 1,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
+      // Sử dụng Consumer để tự động cập nhật UI khi giỏ hàng thay đổi
       body: Consumer<CartProvider>(
         builder: (context, cartProvider, child) {
-          // FIX MỚI: Vì items ở Provider đã đổi thành List, ta gọi trực tiếp luôn
+          // Lấy danh sách item (hiện tại đã là List từ Provider)
           final cartItems = cartProvider.items;
 
           return Column(
@@ -28,17 +29,25 @@ class CartScreen extends StatelessWidget {
               // Phần 1: Danh sách sản phẩm
               Expanded(
                 child: cartItems.isEmpty
-                    ? const Center(child: Text('Giỏ hàng của bạn đang trống!'))
+                    ? const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.shopping_cart_outlined, size: 64, color: Colors.grey),
+                            SizedBox(height: 16),
+                            Text('Giỏ hàng của bạn đang trống!', style: TextStyle(color: Colors.grey)),
+                          ],
+                        ),
+                      )
                     : ListView.builder(
                         itemCount: cartItems.length,
                         itemBuilder: (context, index) {
-                          final item = cartItems[index];
-                          // Giao diện siêu đẹp của bạn ở đây
-                          return CartItemWidget(item: item);
+                          // Truyền từng CartItem vào Widget con
+                          return CartItemWidget(item: cartItems[index]);
                         },
                       ),
               ),
-              // Phần 2: Thanh Sticky Bottom Bar
+              // Phần 2: Thanh Bottom Summary (Tổng tiền & Mua hàng)
               _buildBottomSummary(context, cartProvider),
             ],
           );
@@ -47,6 +56,7 @@ class CartScreen extends StatelessWidget {
     );
   }
 
+  // Thanh điều khiển dưới cùng
   Widget _buildBottomSummary(BuildContext context, CartProvider cartProvider) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
@@ -64,7 +74,7 @@ class CartScreen extends StatelessWidget {
       child: SafeArea(
         child: Row(
           children: [
-            // Checkbox Chọn tất cả
+            // Checkbox Chọn tất cả - Tự động đồng bộ với trạng thái các item
             Checkbox(
               activeColor: Colors.orange, 
               value: cartProvider.isAllSelected,
@@ -78,12 +88,12 @@ class CartScreen extends StatelessWidget {
             
             const Spacer(), 
             
-            // Cụm Tổng tiền
+            // Cụm hiển thị Tổng tiền
             Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                const Text('Tổng thanh toán'),
+                const Text('Tổng thanh toán', style: TextStyle(fontSize: 12)),
                 Text(
                   '₫${cartProvider.totalAmount.toStringAsFixed(0)}', 
                   style: const TextStyle(
@@ -96,7 +106,7 @@ class CartScreen extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             
-            // Nút Mua hàng (Đã được tích hợp lệnh chuyển trang của nhóm)
+            // Nút Mua hàng - Chuyển sang màn hình của Người 5
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,
@@ -106,10 +116,12 @@ class CartScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              onPressed: () {
-                // Code của nhóm: Chuyển sang màn hình Checkout
-                Navigator.of(context).pushNamed(AppRouter.checkout);
-              },
+              onPressed: cartProvider.items.isEmpty 
+                ? null // Vô hiệu hóa nút nếu giỏ hàng trống
+                : () {
+                    // Điều hướng sang trang Checkout sử dụng router chung của nhóm
+                    Navigator.of(context).pushNamed(AppRouter.checkout);
+                  },
               child: const Text('Mua Hàng', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],

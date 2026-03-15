@@ -1,132 +1,77 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:mini_e_commerce/models/cart_item.dart';
-import 'package:mini_e_commerce/models/product.dart';
-import 'package:mini_e_commerce/services/local_storage_service.dart';
+import '../models/cart_item.dart';
+import '../models/product.dart';
+import '../services/local_storage_service.dart';
 
-class CartProvider extends ChangeNotifier {
-  CartProvider({LocalStorageService? localStorageService})
-      : _localStorageService = localStorageService ?? LocalStorageService() {
-    unawaited(loadCart());
-  }
-
+class CartProvider with ChangeNotifier {
   final List<CartItem> _items = [];
-  final LocalStorageService _localStorageService;
-  bool _isInitialized = false;
+  final LocalStorageService _storage = LocalStorageService();
 
   List<CartItem> get items => List.unmodifiable(_items);
-  bool get isInitialized => _isInitialized;
+
+  // Getter dùng cho Badge ở HomeScreen
   int get totalItemTypes => _items.length;
-  int get totalQuantity =>
-      _items.fold<int>(0, (sum, item) => sum + item.quantity);
 
-  // --- PHẦN 1: TÍNH TỔNG TIỀN CHỈ CHO NHỮNG ITEM ĐƯỢC TICK (Logic của bạn) ---
-  double get totalAmount {
-    return _items.fold<double>(0, (sum, item) {
-      if (item.isSelected) {
-        return sum + item.lineTotal;
-      }
-      return sum;
-    });
-  }
+  // Logic Người 4: Tổng tiền chỉ tính món được tick
+  double get totalAmount => _items.fold(0.0, (sum, item) => item.isSelected ? sum + item.lineTotal : sum);
 
-  // --- PHẦN 2: KIỂM TRA CHỌN TẤT CẢ (Logic của bạn) ---
-  bool get isAllSelected {
-    if (_items.isEmpty) return false;
-    return _items.every((item) => item.isSelected);
-  }
+  bool get isAllSelected => _items.isNotEmpty && _items.every((item) => item.isSelected);
 
-  // --- CÁC HÀM CỦA NHÓM LÀM (LƯU LOCAL STORAGE) ---
-  Future<void> loadCart() async {
-    final storedItems = await _localStorageService.readCart();
-    _items
-      ..clear()
-      ..addAll(storedItems);
-    _isInitialized = true;
-    notifyListeners();
-  }
-
-  void setItems(List<CartItem> nextItems) {
-    _items
-      ..clear()
-      ..addAll(nextItems);
-    unawaited(_localStorageService.saveCart(_items));
-    notifyListeners();
-  }
-
-  void addProduct(
-    Product product, {
-    int quantity = 1,
-    String size = 'M',
-    String color = 'Default',
-  }) {
-    final existingIndex = _items.indexWhere(
-      (item) => item.product.id == product.id,
-    );
-
-    if (existingIndex >= 0) {
-      final existingItem = _items[existingIndex];
-      _items[existingIndex] = existingItem.copyWith(
-        quantity: existingItem.quantity + quantity,
-      );
+  void addProduct(Product product, {int quantity = 1}) {
+    final index = _items.indexWhere((item) => item.product.id == product.id);
+    if (index != -1) {
+      _items[index] = _items[index].copyWith(quantity: _items[index].quantity + quantity);
     } else {
-      _items.add(
-        CartItem(
-          id: 'cart_${product.id}_${DateTime.now().microsecondsSinceEpoch}',
-          product: product,
-          quantity: quantity,
-          size: size,
-          color: color,
-        ),
-      );
+      _items.add(CartItem(
+        id: 'cart_${DateTime.now().millisecondsSinceEpoch}',
+        product: product,
+        quantity: quantity,
+        isSelected: false,
+      ));
     }
-    unawaited(_localStorageService.saveCart(_items));
-    notifyListeners();
+    _saveAndNotify();
   }
 
-  // --- PHẦN 3: LOGIC CHỌN TỪNG ITEM (Đã gộp chung với Local Storage) ---
-  void toggleItemSelection(String cartItemId) {
-    final index = _items.indexWhere((item) => item.id == cartItemId);
-    if (index < 0) return;
-
-    final target = _items[index];
-    _items[index] = target.copyWith(isSelected: !target.isSelected);
-    unawaited(_localStorageService.saveCart(_items));
-    notifyListeners();
+  void toggleItemSelection(String id) {
+    final index = _items.indexWhere((item) => item.id == id);
+    if (index != -1) {
+      _items[index] = _items[index].copyWith(isSelected: !_items[index].isSelected);
+      _saveAndNotify();
+    }
   }
 
-  // --- PHẦN 4: LOGIC CHỌN TẤT CẢ / BỎ CHỌN TẤT CẢ (Logic của bạn) ---
-  void toggleSelectAll(bool isSelected) {
+  void toggleSelectAll(bool value) {
     for (int i = 0; i < _items.length; i++) {
-      _items[i] = _items[i].copyWith(isSelected: isSelected);
+      _items[i] = _items[i].copyWith(isSelected: value);
     }
-    unawaited(_localStorageService.saveCart(_items));
-    notifyListeners();
+    _saveAndNotify();
   }
 
-  // --- PHẦN 5: LOGIC TĂNG GIẢM SỐ LƯỢNG (+/-) (Logic của bạn) ---
-  void updateQuantity(String cartItemId, int delta) {
-    final index = _items.indexWhere((item) => item.id == cartItemId);
-    if (index < 0) return;
-
-    int nextQuantity = _items[index].quantity + delta;
-    if (nextQuantity > 0) {
-      _items[index] = _items[index].copyWith(quantity: nextQuantity);
-      unawaited(_localStorageService.saveCart(_items));
-      notifyListeners();
+  void updateQuantity(String id, int delta) {
+    final index = _items.indexWhere((item) => item.id == id);
+    if (index != -1) {
+      int newQty = _items[index].quantity + delta;
+      if (newQty > 0) {
+        _items[index] = _items[index].copyWith(quantity: newQty);
+        _saveAndNotify();
+      }
     }
   }
 
-  // --- PHẦN 6: XOÁ ITEM (Nhóm) ---
-  void removeItem(String cartItemId) {
-    _items.removeWhere((item) => item.id == cartItemId);
-    unawaited(_localStorageService.saveCart(_items));
-    notifyListeners();
+  void removeItem(String id) {
+    _items.removeWhere((item) => item.id == id);
+    _saveAndNotify();
   }
 
+  // Hàm clear() để CheckoutScreen gọi khi đặt hàng xong
   void clear() {
     _items.clear();
-    unawaited(_localStorageService.saveCart(_items));
+    _saveAndNotify();
+  }
+
+  void _saveAndNotify() {
+    unawaited(_storage.saveCart(_items));
     notifyListeners();
   }
 }

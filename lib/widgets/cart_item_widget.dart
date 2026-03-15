@@ -6,9 +6,9 @@ import '../providers/cart_provider.dart';
 class CartItemWidget extends StatelessWidget {
   final CartItem item;
 
-  const CartItemWidget({Key? key, required this.item}) : super(key: key);
+  const CartItemWidget({super.key, required this.item});
 
-  // Hàm hiển thị hộp thoại xác nhận xóa (dùng chung cho vuốt và nút trừ)
+  // Hàm hiển thị hộp thoại xác nhận xóa khi số lượng về 0 hoặc khi vuốt
   Future<bool?> _showDeleteConfirmDialog(BuildContext context) {
     return showDialog<bool>(
       context: context,
@@ -31,16 +31,16 @@ class CartItemWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Không listen ở đây vì Consumer ở CartScreen đã lo việc build lại danh sách
+    // Lấy provider để gọi các hàm xử lý logic
     final cartProvider = Provider.of<CartProvider>(context, listen: false);
 
-    // Bọc ngoài bằng Dismissible để tạo hiệu ứng vuốt xóa
     return Dismissible(
-      key: ValueKey(item.productId),
+      // Sử dụng item.id làm key duy nhất cho mỗi dòng trong giỏ hàng
+      key: ValueKey(item.id),
       direction: DismissDirection.endToStart,
       confirmDismiss: (direction) => _showDeleteConfirmDialog(context),
       onDismissed: (direction) {
-        cartProvider.removeItem(item.productId);
+        cartProvider.removeItem(item.id);
       },
       background: Container(
         color: Colors.red,
@@ -61,42 +61,42 @@ class CartItemWidget extends StatelessWidget {
           padding: const EdgeInsets.all(8),
           child: Row(
             children: [
-              // 1. Checkbox chọn item
+              // 1. Checkbox chọn sản phẩm để tính tiền
               Checkbox(
                 activeColor: Colors.orange,
                 value: item.isSelected,
                 onChanged: (_) {
-                  cartProvider.toggleItemSelection(item.productId);
+                  cartProvider.toggleItemSelection(item.id);
                 },
               ),
-              // 2. Ảnh sản phẩm
+              // 2. Hiển thị ảnh sản phẩm từ đối tượng product
               Container(
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
-                  color: Colors.grey.shade200, // Background tạm khi chờ load ảnh
+                  color: Colors.grey.shade200,
                   image: DecorationImage(
-                    image: NetworkImage(item.imageUrl),
+                    image: NetworkImage(item.product.imageUrl),
                     fit: BoxFit.cover,
                   ),
                 ),
               ),
               const SizedBox(width: 12),
-              // 3. Thông tin chi tiết
+              // 3. Thông tin chi tiết sản phẩm
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      item.title,
+                      item.product.title,
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Phân loại: ${item.variation}',
+                      'Phân loại: ${item.size}, ${item.color}',
                       style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
                     ),
                     const SizedBox(height: 8),
@@ -104,21 +104,24 @@ class CartItemWidget extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '₫${item.price.toStringAsFixed(0)}',
-                          style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 16),
+                          '₫${item.product.price.toStringAsFixed(0)}',
+                          style: const TextStyle(
+                            color: Colors.orange, 
+                            fontWeight: FontWeight.bold, 
+                            fontSize: 16
+                          ),
                         ),
-                        // 4. Bộ đếm số lượng (+/-)
+                        // 4. Bộ đếm số lượng tăng/giảm (+/-)
                         Row(
                           children: [
                             InkWell(
                               onTap: () async {
                                 if (item.quantity > 1) {
-                                  cartProvider.updateQuantity(item.productId, -1);
+                                  cartProvider.updateQuantity(item.id, -1);
                                 } else {
-                                  // Hỏi xác nhận nếu trừ về 0
                                   bool? confirm = await _showDeleteConfirmDialog(context);
                                   if (confirm == true) {
-                                    cartProvider.removeItem(item.productId);
+                                    cartProvider.removeItem(item.id);
                                   }
                                 }
                               },
@@ -130,7 +133,7 @@ class CartItemWidget extends StatelessWidget {
                             ),
                             InkWell(
                               onTap: () {
-                                cartProvider.updateQuantity(item.productId, 1);
+                                cartProvider.updateQuantity(item.id, 1);
                               },
                               child: const Icon(Icons.add_circle_outline, color: Colors.orange),
                             ),
