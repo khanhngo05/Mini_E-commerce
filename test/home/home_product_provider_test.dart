@@ -1,12 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mini_e_commerce/models/banner_item.dart';
+import 'package:mini_e_commerce/models/category.dart';
 import 'package:mini_e_commerce/models/product.dart';
 import 'package:mini_e_commerce/providers/product_provider.dart';
-import 'package:mini_e_commerce/services/product_service.dart';
+import 'package:mini_e_commerce/services/api_service.dart';
 
 void main() {
   group('Home ProductProvider', () {
     test('fetchInitialProducts loads first page and enables hasMore', () async {
-      final provider = ProductProvider(productService: _FakeProductService());
+      final provider = ProductProvider(apiService: _FakeApiService());
 
       await provider.fetchInitialProducts();
 
@@ -17,7 +19,7 @@ void main() {
     });
 
     test('fetchMoreProducts appends next page and stops at end', () async {
-      final provider = ProductProvider(productService: _FakeProductService());
+      final provider = ProductProvider(apiService: _FakeApiService());
 
       await provider.fetchInitialProducts();
       await provider.fetchMoreProducts();
@@ -31,7 +33,7 @@ void main() {
     });
 
     test('refreshProducts resets list to first page', () async {
-      final provider = ProductProvider(productService: _FakeProductService());
+      final provider = ProductProvider(apiService: _FakeApiService());
 
       await provider.fetchInitialProducts();
       await provider.fetchMoreProducts();
@@ -45,7 +47,7 @@ void main() {
   });
 }
 
-class _FakeProductService extends ProductService {
+class _FakeApiService extends ApiService {
   @override
   Future<List<Product>> fetchProducts({int limit = 20}) async {
     final products = List<Product>.generate(18, (index) {
@@ -60,7 +62,24 @@ class _FakeProductService extends ProductService {
         ratingCount: 1200 + index,
       );
     });
-
     return products.take(limit).toList();
+  }
+
+  @override
+  Future<List<BannerItem>> fetchLocalBanners() async {
+    return const <BannerItem>[
+      BannerItem(
+        id: '1',
+        title: 'Test Banner',
+        imageUrl: 'https://example.com/banner.jpg',
+      ),
+    ];
+  }
+
+  @override
+  Future<List<Category>> fetchLocalCategories() async {
+    return const <Category>[
+      Category(id: 'category', name: 'Category', icon: 'category'),
+    ];
   }
 }

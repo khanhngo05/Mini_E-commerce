@@ -1,16 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:mini_e_commerce/models/product.dart';
+import 'package:mini_e_commerce/screens/cart_screen.dart';
+import 'package:mini_e_commerce/screens/checkout_screen.dart';
 import 'package:mini_e_commerce/screens/home_screen.dart';
+import 'package:mini_e_commerce/screens/order_history_screen.dart';
+import 'package:mini_e_commerce/screens/product_detail_screen.dart';
 
 class AppRouter {
   AppRouter._();
 
   static const String home = '/';
+  static const String productDetail = '/product-detail';
+  static const String cart = '/cart';
+  static const String checkout = '/checkout';
+  static const String orderHistory = '/order-history';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case home:
         return MaterialPageRoute<void>(
           builder: (_) => const HomeScreen(),
+          settings: settings,
+        );
+      case productDetail:
+        final product = settings.arguments;
+        if (product is! Product) {
+          return MaterialPageRoute<void>(
+            builder: (_) => const _NotFoundScreen(),
+            settings: settings,
+          );
+        }
+        return MaterialPageRoute<void>(
+          builder: (_) => ProductDetailScreen(product: product),
+          settings: settings,
+        );
+      case cart:
+        return MaterialPageRoute<void>(
+          builder: (_) => const CartScreen(),
+          settings: settings,
+        );
+      case checkout:
+        return MaterialPageRoute<void>(
+          builder: (_) => const CheckoutScreen(),
+          settings: settings,
+        );
+      case orderHistory:
+        return MaterialPageRoute<void>(
+          builder: (_) => const OrderHistoryScreen(),
           settings: settings,
         );
       default:
