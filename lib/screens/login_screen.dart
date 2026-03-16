@@ -13,12 +13,8 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _usernameController = TextEditingController(
-    text: 'group10',
-  );
-  final TextEditingController _passwordController = TextEditingController(
-    text: 'group10@',
-  );
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
@@ -230,7 +226,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 12),
                             const Text(
-                              'Tài khoản demo đã được điền sẵn: group10 / group10@',
+                              'Tài khoản demo: group10 / group10@',
                               style: TextStyle(color: Color(0xFF5F6368)),
                             ),
                           ],
