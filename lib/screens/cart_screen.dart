@@ -21,6 +21,10 @@ class CartScreen extends StatelessWidget {
       ),
       body: Consumer<CartProvider>(
         builder: (context, cartProvider, child) {
+          if (!cartProvider.isInitialized) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
           final cartItems = cartProvider.items;
 
           return Column(
