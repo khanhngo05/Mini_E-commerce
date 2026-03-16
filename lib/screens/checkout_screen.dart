@@ -26,7 +26,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     super.dispose();
   }
 
-  void _placeOrder() {
+  Future<void> _placeOrder() async {
     final cartProvider = context.read<CartProvider>();
     final orderProvider = context.read<OrderProvider>();
 
@@ -57,7 +57,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       createdAt: DateTime.now(),
     );
 
-    orderProvider.addOrder(order);
+    await orderProvider.addOrder(order);
 
     if (widget.selectedItems != null) {
       final selectedIds = selectedItems.map((item) => item.id).toSet();

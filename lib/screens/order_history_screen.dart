@@ -8,6 +8,110 @@ import 'package:provider/provider.dart';
 class OrderHistoryScreen extends StatelessWidget {
   const OrderHistoryScreen({super.key});
 
+  Future<String?> _showCancelReasonDialog(
+    BuildContext context,
+    String orderId,
+  ) async {
+    final reasonController = TextEditingController();
+    var showError = false;
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (statefulContext, setDialogState) {
+            return AlertDialog(
+              title: const Text('Hủy đơn hàng'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text('Vui lòng nhập lý do hủy đơn #$orderId'),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: reasonController,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      hintText: 'Ví dụ: Đổi địa chỉ nhận hàng',
+                      border: const OutlineInputBorder(),
+                      errorText: showError
+                          ? 'Bạn cần nhập lý do hủy đơn'
+                          : null,
+                    ),
+                    onChanged: (_) {
+                      if (showError) {
+                        setDialogState(() {
+                          showError = false;
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Không'),
+                ),
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFD32F2F),
+                  ),
+                  onPressed: () {
+                    final reason = reasonController.text.trim();
+                    if (reason.isEmpty) {
+                      setDialogState(() {
+                        showError = true;
+                      });
+                      return;
+                    }
+                    Navigator.of(dialogContext).pop(reason);
+                  },
+                  child: const Text('Xác nhận hủy'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    reasonController.dispose();
+    return result;
+  }
+
+  bool _canCancelOrder(Order order) {
+    return order.status == OrderStatus.pendingConfirmation;
+  }
+
+  Future<void> _cancelOrder(BuildContext context, Order order) async {
+    final reason = await _showCancelReasonDialog(context, order.id);
+
+    if (reason == null || !context.mounted) {
+      return;
+    }
+
+    final didCancel = await context.read<OrderProvider>().cancelOrder(
+      order.id,
+      reason,
+    );
+    if (!context.mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            didCancel
+                ? 'Đơn hàng đã được hủy thành công'
+                : 'Không thể hủy đơn hàng này',
+          ),
+        ),
+      );
+  }
+
   String _statusLabel(OrderStatus status) {
     switch (status) {
       case OrderStatus.pendingConfirmation:
@@ -78,9 +182,25 @@ class OrderHistoryScreen extends StatelessWidget {
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                            Chip(
-                              label: Text('${order.items.length} sản phẩm'),
-                            ),
+                            Chip(label: Text('${order.items.length} sản phẩm')),
+                            if (_canCancelOrder(order))
+                              ActionChip(
+                                avatar: const Icon(
+                                  Icons.cancel_outlined,
+                                  size: 18,
+                                  color: Color(0xFFD32F2F),
+                                ),
+                                label: const Text('Hủy đơn'),
+                                labelStyle: const TextStyle(
+                                  color: Color(0xFFD32F2F),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                side: const BorderSide(
+                                  color: Color(0xFFFFCDD2),
+                                ),
+                                backgroundColor: const Color(0xFFFFEBEE),
+                                onPressed: () => _cancelOrder(context, order),
+                              ),
                           ],
                         ),
                         const SizedBox(height: 8),
@@ -140,6 +260,18 @@ class OrderHistoryScreen extends StatelessWidget {
                                 .toList(growable: false),
                           ),
                         const SizedBox(height: 6),
+                        if (order.status == OrderStatus.canceled &&
+                            order.cancellationReason != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Text(
+                              'Lý do hủy: ${order.cancellationReason}',
+                              style: const TextStyle(
+                                color: Color(0xFF616161),
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
                         Align(
                           alignment: Alignment.centerRight,
                           child: PriceText(order.totalAmount),

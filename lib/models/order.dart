@@ -9,6 +9,7 @@ class Order {
   final String paymentMethod;
   final OrderStatus status;
   final DateTime createdAt;
+  final String? cancellationReason;
 
   const Order({
     required this.id,
@@ -17,6 +18,7 @@ class Order {
     required this.paymentMethod,
     required this.status,
     required this.createdAt,
+    this.cancellationReason,
   });
 
   double get totalAmount {
@@ -38,6 +40,10 @@ class Order {
       createdAt:
           DateTime.tryParse((json['createdAt'] ?? '') as String) ??
           DateTime.now(),
+      cancellationReason:
+          (json['cancellationReason'] as String?)?.trim().isEmpty ?? true
+          ? null
+          : (json['cancellationReason'] as String),
     );
   }
 
@@ -49,6 +55,7 @@ class Order {
       'paymentMethod': paymentMethod,
       'status': status.name,
       'createdAt': createdAt.toIso8601String(),
+      'cancellationReason': cancellationReason,
     };
   }
 
@@ -59,6 +66,7 @@ class Order {
     String? paymentMethod,
     OrderStatus? status,
     DateTime? createdAt,
+    String? cancellationReason,
   }) {
     return Order(
       id: id ?? this.id,
@@ -67,6 +75,7 @@ class Order {
       paymentMethod: paymentMethod ?? this.paymentMethod,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
+      cancellationReason: cancellationReason ?? this.cancellationReason,
     );
   }
 
