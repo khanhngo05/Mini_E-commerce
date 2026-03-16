@@ -8,6 +8,13 @@ import 'package:provider/provider.dart';
 class OrderHistoryScreen extends StatelessWidget {
   const OrderHistoryScreen({super.key});
 
+  static const List<OrderStatus> _tabStatuses = <OrderStatus>[
+    OrderStatus.pendingConfirmation,
+    OrderStatus.shipping,
+    OrderStatus.delivered,
+    OrderStatus.canceled,
+  ];
+
   Future<String?> _showCancelReasonDialog(
     BuildContext context,
     String orderId,
@@ -65,6 +72,152 @@ class OrderHistoryScreen extends StatelessWidget {
     }
   }
 
+  Widget _buildOrderListByStatus(BuildContext context, OrderStatus status) {
+    final orders = context.watch<OrderProvider>().orders;
+    final filteredOrders = orders
+        .where((order) => order.status == status)
+        .toList(growable: false);
+
+    if (filteredOrders.isEmpty) {
+      return Center(
+        child: Text('Chưa có đơn ${_statusLabel(status).toLowerCase()}'),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(12),
+      itemCount: filteredOrders.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 8),
+      itemBuilder: (BuildContext context, int index) {
+        final order = filteredOrders[index];
+        return _buildOrderCard(context, order);
+      },
+    );
+  }
+
+  Widget _buildOrderCard(BuildContext context, Order order) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              'Đơn #${order.id}',
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 4),
+            Text(DateFormat('dd/MM/yyyy HH:mm').format(order.createdAt)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: <Widget>[
+                Chip(
+                  label: Text(_statusLabel(order.status)),
+                  backgroundColor: _statusColor(
+                    order.status,
+                  ).withValues(alpha: 0.12),
+                  labelStyle: TextStyle(
+                    color: _statusColor(order.status),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Chip(label: Text('${order.items.length} sản phẩm')),
+                if (_canCancelOrder(order))
+                  ActionChip(
+                    avatar: const Icon(
+                      Icons.cancel_outlined,
+                      size: 18,
+                      color: Color(0xFFD32F2F),
+                    ),
+                    label: const Text('Hủy đơn'),
+                    labelStyle: const TextStyle(
+                      color: Color(0xFFD32F2F),
+                      fontWeight: FontWeight.w600,
+                    ),
+                    side: const BorderSide(color: Color(0xFFFFCDD2)),
+                    backgroundColor: const Color(0xFFFFEBEE),
+                    onPressed: () => _cancelOrder(context, order),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Divider(height: 1),
+            const SizedBox(height: 8),
+            if (order.items.isEmpty)
+              const Text(
+                'Không có thông tin sản phẩm trong đơn này',
+                style: TextStyle(color: Color(0xFF757575)),
+              )
+            else
+              Column(
+                children: order.items
+                    .map(
+                      (item) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Text(
+                                    item.product.title,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${item.size}, ${item.color} - Số lượng: ${item.quantity}',
+                                    style: const TextStyle(
+                                      color: Color(0xFF757575),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            PriceText(
+                              item.lineTotal,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFFD32F2F),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                    .toList(growable: false),
+              ),
+            const SizedBox(height: 6),
+            if (order.status == OrderStatus.canceled &&
+                order.cancellationReason != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'Lý do hủy: ${order.cancellationReason}',
+                  style: const TextStyle(
+                    color: Color(0xFF616161),
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: PriceText(order.totalAmount),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Color _statusColor(OrderStatus status) {
     switch (status) {
       case OrderStatus.pendingConfirmation:
@@ -80,148 +233,24 @@ class OrderHistoryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final orders = context.watch<OrderProvider>().orders;
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Lịch sử đơn hàng')),
-      body: orders.isEmpty
-          ? const Center(child: Text('Chưa có đơn hàng nào'))
-          : ListView.separated(
-              padding: const EdgeInsets.all(12),
-              itemCount: orders.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 8),
-              itemBuilder: (BuildContext context, int index) {
-                final order = orders[index];
-                return Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          'Đơn #${order.id}',
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          DateFormat(
-                            'dd/MM/yyyy HH:mm',
-                          ).format(order.createdAt),
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          children: <Widget>[
-                            Chip(
-                              label: Text(_statusLabel(order.status)),
-                              backgroundColor: _statusColor(
-                                order.status,
-                              ).withValues(alpha: 0.12),
-                              labelStyle: TextStyle(
-                                color: _statusColor(order.status),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Chip(label: Text('${order.items.length} sản phẩm')),
-                            if (_canCancelOrder(order))
-                              ActionChip(
-                                avatar: const Icon(
-                                  Icons.cancel_outlined,
-                                  size: 18,
-                                  color: Color(0xFFD32F2F),
-                                ),
-                                label: const Text('Hủy đơn'),
-                                labelStyle: const TextStyle(
-                                  color: Color(0xFFD32F2F),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                side: const BorderSide(
-                                  color: Color(0xFFFFCDD2),
-                                ),
-                                backgroundColor: const Color(0xFFFFEBEE),
-                                onPressed: () => _cancelOrder(context, order),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        const Divider(height: 1),
-                        const SizedBox(height: 8),
-                        if (order.items.isEmpty)
-                          const Text(
-                            'Không có thông tin sản phẩm trong đơn này',
-                            style: TextStyle(color: Color(0xFF757575)),
-                          )
-                        else
-                          Column(
-                            children: order.items
-                                .map(
-                                  (item) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 8),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: <Widget>[
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: <Widget>[
-                                              Text(
-                                                item.product.title,
-                                                maxLines: 2,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                '${item.size}, ${item.color} - Số lượng: ${item.quantity}',
-                                                style: const TextStyle(
-                                                  color: Color(0xFF757575),
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        PriceText(
-                                          item.lineTotal,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            color: Color(0xFFD32F2F),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                                .toList(growable: false),
-                          ),
-                        const SizedBox(height: 6),
-                        if (order.status == OrderStatus.canceled &&
-                            order.cancellationReason != null)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Text(
-                              'Lý do hủy: ${order.cancellationReason}',
-                              style: const TextStyle(
-                                color: Color(0xFF616161),
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                          ),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: PriceText(order.totalAmount),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+    return DefaultTabController(
+      length: _tabStatuses.length,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Lịch sử đơn hàng'),
+          bottom: TabBar(
+            isScrollable: true,
+            tabs: _tabStatuses
+                .map((status) => Tab(text: _statusLabel(status)))
+                .toList(growable: false),
+          ),
+        ),
+        body: TabBarView(
+          children: _tabStatuses
+              .map((status) => _buildOrderListByStatus(context, status))
+              .toList(growable: false),
+        ),
+      ),
     );
   }
 }
