@@ -33,7 +33,7 @@ void main() {
         await tester.pumpAndSettle();
       });
 
-      expect(find.text('TH4 - Nhóm G10'), findsOneWidget);
+      expect(find.text('TH4 - G10'), findsOneWidget);
       expect(find.byType(RefreshIndicator), findsOneWidget);
       expect(find.byType(NavigationBar), findsOneWidget);
     });

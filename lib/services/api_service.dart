@@ -38,6 +38,43 @@ class ApiService {
     }
   }
 
+  Future<String> login({
+    required String username,
+    required String password,
+  }) async {
+    final uri = Uri.parse('$_baseUrl/auth/login');
+    try {
+      final response = await _client
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(<String, String>{
+              'username': username,
+              'password': password,
+            }),
+          )
+          .timeout(const Duration(seconds: 12));
+
+      if (response.statusCode != 200) {
+        throw ApiException(
+          'Login failed. Code: ${response.statusCode}. Response: ${response.body}',
+        );
+      }
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map<String, dynamic> || decoded['token'] == null) {
+        throw const ApiException('Login response has invalid format.');
+      }
+
+      return decoded['token'].toString();
+    } catch (error) {
+      if (error is ApiException) {
+        rethrow;
+      }
+      throw ApiException('Network error while login: $error');
+    }
+  }
+
   Future<List<String>> fetchProductCategoryIds() async {
     final uri = Uri.parse('$_baseUrl/products/categories');
     try {

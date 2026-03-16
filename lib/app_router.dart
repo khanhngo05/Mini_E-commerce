@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:mini_e_commerce/models/product.dart';
+import 'package:mini_e_commerce/screens/auth_gate_screen.dart';
 import 'package:mini_e_commerce/models/cart_item.dart';
 import 'package:mini_e_commerce/screens/cart_screen.dart';
 import 'package:mini_e_commerce/screens/checkout_screen.dart';
 import 'package:mini_e_commerce/screens/home_screen.dart';
+import 'package:mini_e_commerce/screens/login_screen.dart';
 import 'package:mini_e_commerce/screens/order_history_screen.dart';
 import 'package:mini_e_commerce/screens/product_detail_screen.dart';
 
@@ -15,10 +17,22 @@ class AppRouter {
   static const String cart = '/cart';
   static const String checkout = '/checkout';
   static const String orderHistory = '/order-history';
+  static const String login = '/login';
+  static const String shopHome = '/shop-home';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case home:
+        return MaterialPageRoute<void>(
+          builder: (_) => const AuthGateScreen(),
+          settings: settings,
+        );
+      case login:
+        return MaterialPageRoute<void>(
+          builder: (_) => const LoginScreen(),
+          settings: settings,
+        );
+      case shopHome:
         return MaterialPageRoute<void>(
           builder: (_) => const HomeScreen(),
           settings: settings,

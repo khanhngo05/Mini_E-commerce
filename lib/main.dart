@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mini_e_commerce/app_router.dart';
 import 'package:mini_e_commerce/constants/app_theme.dart';
+import 'package:mini_e_commerce/providers/auth_provider.dart';
 import 'package:mini_e_commerce/providers/cart_provider.dart';
 import 'package:mini_e_commerce/providers/order_provider.dart';
 import 'package:mini_e_commerce/providers/product_provider.dart';
@@ -18,6 +19,7 @@ class MiniECommerceApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider<AuthProvider>(create: (_) => AuthProvider()),
         ChangeNotifierProvider<ProductProvider>(
           create: (_) => ProductProvider(),
         ),

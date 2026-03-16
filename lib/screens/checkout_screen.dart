@@ -109,7 +109,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
-            value: _paymentMethod,
+            initialValue: _paymentMethod,
             items: const <DropdownMenuItem<String>>[
               DropdownMenuItem(
                 value: 'COD',

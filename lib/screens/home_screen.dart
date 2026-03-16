@@ -8,6 +8,7 @@ import '../models/banner_item.dart';
 import '../models/category.dart';
 import '../models/product.dart';
 import '../providers/cart_provider.dart';
+import '../providers/auth_provider.dart';
 import '../providers/product_provider.dart';
 import '../providers/ui_provider.dart';
 import '../widgets/cart_badge.dart';
@@ -22,7 +23,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
-  final PageController _bannerController = PageController(viewportFraction: 0.93);
+  final PageController _bannerController = PageController(
+    viewportFraction: 0.93,
+  );
 
   Timer? _bannerTimer;
   bool _isScrolled = false;
@@ -83,14 +86,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
   IconData _iconFromName(String iconName) {
     switch (iconName) {
-      case 'smartphone': return Icons.smartphone_rounded;
-      case 'checkroom': return Icons.checkroom_rounded;
-      case 'spa': return Icons.spa_rounded;
-      case 'chair': return Icons.chair_alt_rounded;
-      case 'sports_soccer': return Icons.sports_soccer_rounded;
-      case 'shopping_basket': return Icons.shopping_basket_rounded;
-      case 'diamond': return Icons.diamond_outlined;
-      default: return Icons.category_outlined;
+      case 'smartphone':
+        return Icons.smartphone_rounded;
+      case 'checkroom':
+        return Icons.checkroom_rounded;
+      case 'spa':
+        return Icons.spa_rounded;
+      case 'chair':
+        return Icons.chair_alt_rounded;
+      case 'sports_soccer':
+        return Icons.sports_soccer_rounded;
+      case 'shopping_basket':
+        return Icons.shopping_basket_rounded;
+      case 'diamond':
+        return Icons.diamond_outlined;
+      default:
+        return Icons.category_outlined;
     }
   }
 
@@ -114,15 +125,36 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       bottomNavigationBar: NavigationBar(
         selectedIndex: uiProvider.selectedBottomTab,
-        onDestinationSelected: (index) {
+        onDestinationSelected: (index) async {
           uiProvider.setBottomTab(index);
-          if (index == 1) Navigator.of(context).pushNamed(AppRouter.cart);
-          if (index == 2) Navigator.of(context).pushNamed(AppRouter.orderHistory);
+          if (index == 1) {
+            await Navigator.of(context).pushNamed(AppRouter.cart);
+            if (!context.mounted) {
+              return;
+            }
+            context.read<UiProvider>().setBottomTab(0);
+          }
+          if (index == 2) {
+            await Navigator.of(context).pushNamed(AppRouter.orderHistory);
+            if (!context.mounted) {
+              return;
+            }
+            context.read<UiProvider>().setBottomTab(0);
+          }
         },
         destinations: const <NavigationDestination>[
-          NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Trang chủ'),
-          NavigationDestination(icon: Icon(Icons.shopping_cart_outlined), label: 'Giỏ hàng'),
-          NavigationDestination(icon: Icon(Icons.history_rounded), label: 'Đơn hàng'),
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            label: 'Trang chủ',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.shopping_cart_outlined),
+            label: 'Giỏ hàng',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.history_rounded),
+            label: 'Đơn hàng',
+          ),
         ],
       ),
       body: RefreshIndicator(
@@ -136,15 +168,28 @@ class _HomeScreenState extends State<HomeScreen> {
               toolbarHeight: 52,
               backgroundColor: _isScrolled ? const Color(0xFFD32F2F) : Colors.transparent,
               centerTitle: false,
-              // 👇 ĐÃ SỬA TIÊU ĐỀ KHỚP VỚI UNIT TEST 👇
               title: const Text(
-                'TH4 - Nhóm G10', 
+                'TH4 - G10',
                 style: TextStyle(
-                  color: Colors.white, 
-                  fontWeight: FontWeight.w700
-                )
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               actions: [
+                IconButton(
+                  onPressed: () async {
+                    await context.read<AuthProvider>().logout();
+                    if (!context.mounted) {
+                      return;
+                    }
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                      AppRouter.login,
+                      (route) => false,
+                    );
+                  },
+                  icon: const Icon(Icons.logout_rounded, color: Colors.white),
+                  tooltip: 'Đăng xuất',
+                ),
                 CartBadge(
                   count: cartProvider.totalItemTypes,
                   onPressed: () => Navigator.of(context).pushNamed(AppRouter.cart),
@@ -162,7 +207,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-            
             SliverToBoxAdapter(
               child: _BannerSection(controller: _bannerController),
             ),
@@ -179,7 +223,10 @@ class _HomeScreenState extends State<HomeScreen> {
             const SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(12, 16, 12, 8),
-                child: Text('Gợi ý hôm nay', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                child: Text(
+                  'Gợi ý hôm nay',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
 
@@ -199,12 +246,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       product: product,
                       tag: _resolveTag(product, index),
                       soldText: _formatSold(product.ratingCount),
-                      onTap: () => Navigator.of(context).pushNamed(AppRouter.productDetail, arguments: product),
+                      onTap: () => Navigator.of(context).pushNamed(
+                        AppRouter.productDetail,
+                        arguments: product,
+                      ),
                       onAddToCart: () {
                         context.read<CartProvider>().addProduct(product);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Đã thêm ${product.title} vào giỏ hàng!'),
+                            content: Text(
+                              'Đã thêm ${product.title} vào giỏ hàng!',
+                            ),
                             duration: const Duration(seconds: 1),
                             behavior: SnackBarBehavior.floating,
                           ),
@@ -221,9 +273,12 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 child: Center(
-                  child: productProvider.isFetchingMore 
-                    ? const CircularProgressIndicator() 
-                    : const Text('Bạn đã xem hết sản phẩm rồi', style: TextStyle(color: Colors.grey)),
+                  child: productProvider.isFetchingMore
+                      ? const CircularProgressIndicator()
+                      : const Text(
+                          'Bạn đã xem hết sản phẩm rồi',
+                          style: TextStyle(color: Colors.grey),
+                        ),
                 ),
               ),
             ),
@@ -234,7 +289,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// Các sub-widgets (Giữ nguyên logic chuyên nghiệp)
 class _BannerSection extends StatelessWidget {
   final PageController controller;
   const _BannerSection({required this.controller});
@@ -245,7 +299,9 @@ class _BannerSection extends StatelessWidget {
     final uiProvider = context.watch<UiProvider>();
     final banners = productProvider.banners;
 
-    if (banners.isEmpty) return const SizedBox.shrink();
+    if (banners.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Column(
       children: [
@@ -259,20 +315,31 @@ class _BannerSection extends StatelessWidget {
               margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                image: DecorationImage(image: NetworkImage(banners[index].imageUrl), fit: BoxFit.cover),
+                image: DecorationImage(
+                  image: NetworkImage(banners[index].imageUrl),
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
           ),
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(banners.length, (index) => AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            width: index == uiProvider.currentBannerIndex ? 16 : 8,
-            height: 8,
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            decoration: BoxDecoration(color: index == uiProvider.currentBannerIndex ? Colors.red : Colors.grey, borderRadius: BorderRadius.circular(4)),
-          )),
+          children: List.generate(
+            banners.length,
+            (index) => AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: index == uiProvider.currentBannerIndex ? 16 : 8,
+              height: 8,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                color: index == uiProvider.currentBannerIndex
+                    ? Colors.red
+                    : Colors.grey,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -285,7 +352,12 @@ class _CategorySection extends StatelessWidget {
   final IconData Function(String) iconFromName;
   final Function(String?) onSelectCategory;
 
-  const _CategorySection({required this.categories, required this.selectedCategoryId, required this.iconFromName, required this.onSelectCategory});
+  const _CategorySection({
+    required this.categories,
+    required this.selectedCategoryId,
+    required this.iconFromName,
+    required this.onSelectCategory,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -302,9 +374,20 @@ class _CategorySection extends StatelessWidget {
             padding: const EdgeInsets.all(8),
             child: Column(
               children: [
-                CircleAvatar(backgroundColor: Colors.red.withOpacity(0.1), child: Icon(iconFromName(categories[i].icon), color: Colors.red)),
+                CircleAvatar(
+                  backgroundColor: Colors.red.withValues(alpha: 0.1),
+                  child: Icon(
+                    iconFromName(categories[i].icon),
+                    color: Colors.red,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(categories[i].name, style: const TextStyle(fontSize: 11), textAlign: TextAlign.center, maxLines: 1),
+                Text(
+                  categories[i].name,
+                  style: const TextStyle(fontSize: 11),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                ),
               ],
             ),
           ),
