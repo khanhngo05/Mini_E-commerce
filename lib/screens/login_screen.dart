@@ -224,11 +224,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'Tài khoản demo: group10 / group10@',
-                              style: TextStyle(color: Color(0xFF5F6368)),
-                            ),
                           ],
                         ),
                       ),
