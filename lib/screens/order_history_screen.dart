@@ -12,72 +12,12 @@ class OrderHistoryScreen extends StatelessWidget {
     BuildContext context,
     String orderId,
   ) async {
-    final reasonController = TextEditingController();
-    var showError = false;
-
-    final result = await showDialog<String>(
+    return showDialog<String>(
       context: context,
       builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (statefulContext, setDialogState) {
-            return AlertDialog(
-              title: const Text('Hủy đơn hàng'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text('Vui lòng nhập lý do hủy đơn #$orderId'),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: reasonController,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      hintText: 'Ví dụ: Đổi địa chỉ nhận hàng',
-                      border: const OutlineInputBorder(),
-                      errorText: showError
-                          ? 'Bạn cần nhập lý do hủy đơn'
-                          : null,
-                    ),
-                    onChanged: (_) {
-                      if (showError) {
-                        setDialogState(() {
-                          showError = false;
-                        });
-                      }
-                    },
-                  ),
-                ],
-              ),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text('Không'),
-                ),
-                FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFD32F2F),
-                  ),
-                  onPressed: () {
-                    final reason = reasonController.text.trim();
-                    if (reason.isEmpty) {
-                      setDialogState(() {
-                        showError = true;
-                      });
-                      return;
-                    }
-                    Navigator.of(dialogContext).pop(reason);
-                  },
-                  child: const Text('Xác nhận hủy'),
-                ),
-              ],
-            );
-          },
-        );
+        return _CancelOrderDialog(orderId: orderId);
       },
     );
-
-    reasonController.dispose();
-    return result;
   }
 
   bool _canCancelOrder(Order order) {
@@ -282,6 +222,87 @@ class OrderHistoryScreen extends StatelessWidget {
                 );
               },
             ),
+    );
+  }
+}
+
+class _CancelOrderDialog extends StatefulWidget {
+  const _CancelOrderDialog({required this.orderId});
+
+  final String orderId;
+
+  @override
+  State<_CancelOrderDialog> createState() => _CancelOrderDialogState();
+}
+
+class _CancelOrderDialogState extends State<_CancelOrderDialog> {
+  late final TextEditingController _reasonController;
+  bool _showError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _reasonController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  void _confirmCancel() {
+    final reason = _reasonController.text.trim();
+    if (reason.isEmpty) {
+      setState(() {
+        _showError = true;
+      });
+      return;
+    }
+    Navigator.of(context).pop(reason);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Hủy đơn hàng'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text('Vui lòng nhập lý do hủy đơn #${widget.orderId}'),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _reasonController,
+            maxLines: 3,
+            decoration: InputDecoration(
+              hintText: 'Ví dụ: Đổi địa chỉ nhận hàng',
+              border: const OutlineInputBorder(),
+              errorText: _showError ? 'Bạn cần nhập lý do hủy đơn' : null,
+            ),
+            onChanged: (_) {
+              if (_showError) {
+                setState(() {
+                  _showError = false;
+                });
+              }
+            },
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Không'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFFD32F2F),
+          ),
+          onPressed: _confirmCancel,
+          child: const Text('Xác nhận hủy'),
+        ),
+      ],
     );
   }
 }
