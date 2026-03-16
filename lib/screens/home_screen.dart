@@ -25,6 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final PageController _bannerController = PageController(viewportFraction: 0.93);
 
   Timer? _bannerTimer;
+  bool _isScrolled = false;
 
   @override
   void initState() {
@@ -47,11 +48,16 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  // Xử lý hiệu ứng khi cuộn trang
   void _onScroll() {
     if (!_scrollController.hasClients) return;
 
-    // Tự động load thêm sản phẩm khi cuộn gần hết (Lazy Loading)
+    final shouldHighlight = _scrollController.offset > 10;
+    if (shouldHighlight != _isScrolled) {
+      setState(() {
+        _isScrolled = shouldHighlight;
+      });
+    }
+
     final provider = context.read<ProductProvider>();
     final threshold = _scrollController.position.maxScrollExtent - 240;
     if (_scrollController.position.pixels >= threshold) {
@@ -75,7 +81,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // Hàm chuyển đổi tên icon từ server sang IconData của Flutter
   IconData _iconFromName(String iconName) {
     switch (iconName) {
       case 'smartphone': return Icons.smartphone_rounded;
@@ -89,14 +94,12 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Gắn tag cho sản phẩm dựa trên các tiêu chí (Logic UI)
   String _resolveTag(Product product, int index) {
     if (index % 4 == 0) return 'Mall';
     if (product.rating >= 4.2) return 'Yêu thích';
     return 'Deal hot';
   }
 
-  // Định dạng số lượng đã bán
   String _formatSold(int count) {
     if (count >= 1000) return 'Đã bán ${(count / 1000).toStringAsFixed(1)}k';
     return 'Đã bán $count';
@@ -106,27 +109,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final productProvider = context.watch<ProductProvider>();
     final uiProvider = context.watch<UiProvider>();
-    final cartProvider = context.watch<CartProvider>(); // Lắng nghe Cart để update Badge
+    final cartProvider = context.watch<CartProvider>();
 
     return Scaffold(
       bottomNavigationBar: NavigationBar(
         selectedIndex: uiProvider.selectedBottomTab,
-        onDestinationSelected: (index) async {
+        onDestinationSelected: (index) {
           uiProvider.setBottomTab(index);
-          if (index == 1) {
-            await Navigator.of(context).pushNamed(AppRouter.cart);
-            if (!context.mounted) {
-              return;
-            }
-            context.read<UiProvider>().setBottomTab(0);
-          }
-          if (index == 2) {
-            await Navigator.of(context).pushNamed(AppRouter.orderHistory);
-            if (!context.mounted) {
-              return;
-            }
-            context.read<UiProvider>().setBottomTab(0);
-          }
+          if (index == 1) Navigator.of(context).pushNamed(AppRouter.cart);
+          if (index == 2) Navigator.of(context).pushNamed(AppRouter.orderHistory);
         },
         destinations: const <NavigationDestination>[
           NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Trang chủ'),
@@ -139,31 +130,43 @@ class _HomeScreenState extends State<HomeScreen> {
         child: CustomScrollView(
           controller: _scrollController,
           slivers: <Widget>[
-            // AppBar có chứa Badge Giỏ hàng của Người 4
             SliverAppBar(
               pinned: true,
               expandedHeight: 120,
               toolbarHeight: 52,
-              backgroundColor: const Color(0xFFD32F2F),
-              surfaceTintColor: Colors.transparent,
-              shadowColor: Colors.transparent,
-              elevation: 0,
-              scrolledUnderElevation: 0,
-              title: const Text('TH4 - G10', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+              backgroundColor: _isScrolled ? const Color(0xFFD32F2F) : Colors.transparent,
+              centerTitle: false,
+              // 👇 ĐÃ SỬA TIÊU ĐỀ KHỚP VỚI UNIT TEST 👇
+              title: const Text(
+                'TH4 - Nhóm G10', 
+                style: TextStyle(
+                  color: Colors.white, 
+                  fontWeight: FontWeight.w700
+                )
+              ),
               actions: [
                 CartBadge(
-                  count: cartProvider.totalItemTypes, // Sử dụng getter mới chúng ta vừa thêm
+                  count: cartProvider.totalItemTypes,
                   onPressed: () => Navigator.of(context).pushNamed(AppRouter.cart),
                 ),
               ],
+              flexibleSpace: FlexibleSpaceBar(
+                background: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFFE53935), Color(0xFFD32F2F)],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                  ),
+                ),
+              ),
             ),
             
-            // Phần Banner Quảng cáo
             SliverToBoxAdapter(
               child: _BannerSection(controller: _bannerController),
             ),
 
-            // Phần Danh mục sản phẩm (Categories)
             SliverToBoxAdapter(
               child: _CategorySection(
                 categories: productProvider.categories,
@@ -173,7 +176,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // Tiêu đề phần gợi ý
             const SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(12, 16, 12, 8),
@@ -181,7 +183,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // Grid hiển thị sản phẩm
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               sliver: SliverGrid(
@@ -199,8 +200,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       tag: _resolveTag(product, index),
                       soldText: _formatSold(product.ratingCount),
                       onTap: () => Navigator.of(context).pushNamed(AppRouter.productDetail, arguments: product),
-                      
-                      // LOGIC QUAN TRỌNG CỦA NGƯỜI 4: Thêm vào giỏ hàng
                       onAddToCart: () {
                         context.read<CartProvider>().addProduct(product);
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -218,7 +217,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // Loading indicator khi cuộn trang
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 20),
@@ -236,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// Các sub-widgets hỗ trợ (Banner, Category Tiles...) - Giữ nguyên logic UI của nhóm
+// Các sub-widgets (Giữ nguyên logic chuyên nghiệp)
 class _BannerSection extends StatelessWidget {
   final PageController controller;
   const _BannerSection({required this.controller});
@@ -257,10 +255,15 @@ class _BannerSection extends StatelessWidget {
             controller: controller,
             itemCount: banners.length,
             onPageChanged: uiProvider.setBannerIndex,
-            itemBuilder: (_, index) => _BannerCard(item: banners[index]),
+            itemBuilder: (_, index) => Container(
+              margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                image: DecorationImage(image: NetworkImage(banners[index].imageUrl), fit: BoxFit.cover),
+              ),
+            ),
           ),
         ),
-        const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(banners.length, (index) => AnimatedContainer(
@@ -272,22 +275,6 @@ class _BannerSection extends StatelessWidget {
           )),
         ),
       ],
-    );
-  }
-}
-
-class _BannerCard extends StatelessWidget {
-  final BannerItem item;
-  const _BannerCard({required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        image: DecorationImage(image: NetworkImage(item.imageUrl), fit: BoxFit.cover),
-      ),
     );
   }
 }
