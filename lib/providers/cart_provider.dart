@@ -5,10 +5,16 @@ import '../models/product.dart';
 import '../services/local_storage_service.dart';
 
 class CartProvider with ChangeNotifier {
+  CartProvider() {
+    unawaited(_loadCart());
+  }
+
   final List<CartItem> _items = [];
   final LocalStorageService _storage = LocalStorageService();
+  bool _isInitialized = false;
 
   List<CartItem> get items => List.unmodifiable(_items);
+  bool get isInitialized => _isInitialized;
 
   List<CartItem> get selectedItems =>
       _items.where((item) => item.isSelected).toList(growable: false);
@@ -20,14 +26,22 @@ class CartProvider with ChangeNotifier {
       _items.fold<int>(0, (sum, item) => sum + item.quantity);
 
   // Logic Người 4: Tổng tiền chỉ tính món được tick
-  double get totalAmount => selectedItems.fold<double>(
-    0,
-    (sum, item) => sum + item.lineTotal,
-  );
+  double get totalAmount =>
+      selectedItems.fold<double>(0, (sum, item) => sum + item.lineTotal);
 
   double get selectedAmount => totalAmount;
 
-  bool get isAllSelected => _items.isNotEmpty && _items.every((item) => item.isSelected);
+  bool get isAllSelected =>
+      _items.isNotEmpty && _items.every((item) => item.isSelected);
+
+  Future<void> _loadCart() async {
+    final storedItems = await _storage.readCart();
+    _items
+      ..clear()
+      ..addAll(storedItems);
+    _isInitialized = true;
+    notifyListeners();
+  }
 
   void setItems(List<CartItem> nextItems) {
     _items
@@ -55,14 +69,16 @@ class CartProvider with ChangeNotifier {
         isSelected: isSelected ? true : _items[index].isSelected,
       );
     } else {
-      _items.add(CartItem(
-        id: 'cart_${DateTime.now().millisecondsSinceEpoch}',
-        product: product,
-        quantity: quantity,
-        size: size,
-        color: color,
-        isSelected: isSelected,
-      ));
+      _items.add(
+        CartItem(
+          id: 'cart_${DateTime.now().millisecondsSinceEpoch}',
+          product: product,
+          quantity: quantity,
+          size: size,
+          color: color,
+          isSelected: isSelected,
+        ),
+      );
     }
     _saveAndNotify();
   }
