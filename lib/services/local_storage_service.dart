@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class LocalStorageService {
   static const String _cartKey = 'cart_items_v1';
   static const String _orderKey = 'orders_v1';
+  static const String _authTokenKey = 'auth_token_v1';
 
   Future<void> saveCart(List<CartItem> items) async {
     final prefs = await SharedPreferences.getInstance();
@@ -52,5 +53,24 @@ class LocalStorageService {
     return decoded
         .map((item) => Order.fromJson(item as Map<String, dynamic>))
         .toList();
+  }
+
+  Future<void> saveAuthToken(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_authTokenKey, token);
+  }
+
+  Future<String?> readAuthToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString(_authTokenKey);
+    if (token == null || token.isEmpty) {
+      return null;
+    }
+    return token;
+  }
+
+  Future<void> clearAuthToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_authTokenKey);
   }
 }
